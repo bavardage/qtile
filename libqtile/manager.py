@@ -627,6 +627,7 @@ class Qtile(command.CommandObject):
                 c = window.Window(w, self)
                 self.windowMap[w] = c
                 self.currentScreen.group.add(c)
+                Hooks.call_hook("client-new", c)
 
     def grabKeys(self):
         self.root.ungrab_key(X.AnyKey, X.AnyModifier)
