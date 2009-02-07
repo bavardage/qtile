@@ -23,6 +23,7 @@ import Xlib
 from Xlib import X, Xatom
 import Xlib.protocol.event as event
 import command, utils
+import manager
 
 class _Window(command.CommandObject):
     def __init__(self, window, qtile):
@@ -137,6 +138,7 @@ class _Window(command.CommandObject):
         self.window.send_event(e)
 
     def kill(self):
+        manager.Hooks.call_hook("client-killed", self)
         if self.hasProtocol("WM_DELETE_WINDOW"):
             e = event.ClientMessage(
                     window = self.window,
@@ -207,6 +209,7 @@ class _Window(command.CommandObject):
             )
             if warp:
                 self.window.warp_pointer(0, 0)
+        manager.Hooks.call_hook("client-focus", self)
 
     def hasProtocol(self, name):
         s = set()
@@ -352,6 +355,7 @@ class Window(_Window):
                  X.FocusChangeMask
     group = None
     def handle_EnterNotify(self, e):
+        manager.Hooks.call_hook("client-mouse-enter", self)
         self.group.focus(self, False)
         if self.group.screen and self.qtile.currentScreen != self.group.screen:
             self.qtile.toScreen(self.group.screen.index)
@@ -371,6 +375,7 @@ class Window(_Window):
             utils.outputToStderr("normal_hints")
         elif e.atom == Xatom.WM_NAME:
             self.updateName()
+            manager.Hooks.call_hook("client-name-updated", self)
         else:
             utils.outputToStderr(e)
 
