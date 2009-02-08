@@ -1,4 +1,5 @@
 from groupbox import GroupBox
+from ttfgroupbox import TTFGroupBox
 from windowname import WindowName
 from textbox import TextBox
 from ttftextbox import TTFTextBox
