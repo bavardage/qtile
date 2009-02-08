@@ -35,17 +35,14 @@ class TTFTextBox(base._Widget):
                 
     def draw(self):
         if self.updated:
-            self.font_im = Image.new('RGB', 
-                                     (self.width, self.height),
-                                     self.bgcolor
-                                     )
-            draw = ImageDraw.Draw(self.font_im)
-            draw.text((0,0), 
-                      self.text, 
-                      font=self.ttffont,
-                      fill=self.fgcolor,
-                      )
+            self.font_im = self._drawer.ttf_pil_image(self.text,
+                                                      self.width,
+                                                      self.height,
+                                                      self.fgcolor,
+                                                      self.bgcolor,
+                                                      self.ttffont)
             self.updated = False
+            print "lol"
         self._drawer.win.put_pil_image(self._drawer.gc,
                                        self.offset,
                                        0,

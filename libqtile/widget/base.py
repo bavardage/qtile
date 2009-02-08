@@ -1,5 +1,9 @@
 from .. import command, utils, bar
 
+import Image
+import ImageDraw
+import ImageFont
+
 LEFT = object()
 CENTER = object()
 class _Drawer:
@@ -79,6 +83,35 @@ class _Drawer:
         else:
             x = x + (width - textwidth)/2
         self.win.draw_text(self.gc, x, y, text)
+
+    def ttf_textbox(self, text, x, y, width, height, fg, bg, fontdata):
+        image = self.ttf_pil_image(text, width, height, fg, bg, fontdata)
+        
+        self.win.put_pil_image(self.gc,
+                               x,
+                               y,
+                               image
+                               )
+
+    def ttf_pil_image(self, text, width, height, fg, bg, fontdata):
+        if isinstance(fontdata, tuple):
+            fontname, size = fontdata
+            font = ImageFont.truetype(fontname, size)
+        else:
+            font = fontdata #is a PIL font
+        text = text or " "
+        font_im = Image.new('RGB',
+                            (width, height),
+                            bg,
+                            )
+        draw = ImageDraw.Draw(font_im)
+        draw.text((0,0),
+                  text,
+                  font=font,
+                  fill=fg
+                  )
+        return font_im
+        
 
     def rectangle(self, x, y, width, height, fillColor=None, borderColor=None, borderWidth=1):
         if fillColor:
