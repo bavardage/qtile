@@ -398,6 +398,8 @@ class Theme:
         'border_urgent': '#ffff00',
         'border_width': 1,
         'font': None,
+        'ttffont': '/usr/share/fonts/TTF/Vera.ttf',
+        'ttffontsize': 12,
         'opacity': 1.0,
         }
     specials = {}
