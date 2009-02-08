@@ -84,21 +84,27 @@ class _Drawer:
             x = x + (width - textwidth)/2
         self.win.draw_text(self.gc, x, y, text)
 
-    def ttf_textbox(self, text, x, y, width, height, fg, bg, fontdata):
-        image = self.ttf_pil_image(text, width, height, fg, bg, fontdata)
-        
+    def ttf_textbox(self, text, x, y, width, height, fg, bg, fontdata, 
+                    alignment=LEFT):
+        image = self.ttf_pil_image(text, fg, bg, fontdata)
+        imw, imh = image.size
+        if alignment == CENTER:
+            x += (width - imw)/2
         self.win.put_pil_image(self.gc,
                                x,
                                y,
                                image
                                )
 
-    def ttf_pil_image(self, text, width, height, fg, bg, fontdata):
+    def ttf_pil_image(self, text, fg, bg, fontdata, width=None):
         if isinstance(fontdata, tuple):
             fontname, size = fontdata
             font = ImageFont.truetype(fontname, size)
         else:
             font = fontdata #is a PIL font
+        w, height = font.getsize(text)
+        if width is None:
+            width = w
         text = text or " "
         font_im = Image.new('RGB',
                             (width, height),
