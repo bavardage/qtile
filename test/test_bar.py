@@ -71,7 +71,45 @@ class uWidgets(utils.QtileTests):
         self.c.widget["measure"].update(50)
         self.c.widget["measure"].update(80)
         self.c.widget["measure"].update(100)
-        
+
+class TTFConfig:
+    keys = []
+    groups = ["a", "b", "c", "d"]
+    layouts = [libqtile.layout.stack.Stack(stacks=1)]
+    screens = [
+        libqtile.manager.Screen(
+            bottom=libqtile.bar.Bar(
+                        [
+                            libqtile.widget.TTFGroupBox(),
+                            libqtile.widget.TTFWindowName(),
+                            libqtile.widget.TTFTextBox("text", text="default", width=100),
+                        ],
+                        20
+                    ),
+        )
+    ]
+    theme = None
+
+
+class uTTFWidgets(utils.QtileTests):
+    config = TTFConfig()
+
+    def test_draw(self):
+        self.testWindow("one")
+        b = self.c.bar["bottom"].info()
+        assert b["widgets"][0]["name"] == "TTFGroupBox"
+
+    def test_textbox(self):
+        assert "text" in self.c.list_widgets()
+        self.c.widget["text"].update("testing")
+        assert self.c.widget["text"].get() == "testing"
+
+    def test_groupbox_click(self):
+        self.c.group["c"].toscreen()
+        assert self.c.groups()["a"]["screen"] == None
+        self.c.bar["bottom"].fake_click(0, "bottom", 10, 10)
+        assert self.c.groups()["a"]["screen"] == 0
+
 
 class GeomConf:
     keys = []
@@ -213,6 +251,7 @@ tests = [
     utils.xfactory(xinerama=True), [
         uBarGeometry(),
         uWidgets(),
+        uTTFWidgets(),
         uBarErr(),
         uOffsetCalculation()
     ]
