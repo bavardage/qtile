@@ -42,7 +42,6 @@ class TTFTextBox(base._Widget):
                                                       width=self.width
                                                       )
             self.updated = False
-            print "lol"
         self._drawer.win.put_pil_image(self._drawer.gc,
                                        self.offset,
                                        0,

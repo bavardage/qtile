@@ -3,7 +3,6 @@ import base
 class TTFGroupBox(GroupBox):
 
     def _configure(self, qtile, bar, event, theme):
-        print "Config groupbox"
         GroupBox._configure(self, qtile, bar, event, theme)
         self.borderwidth = theme['groupbox_border_width']
         self.ttffontdata = (theme['groupbox_ttffont'],
