@@ -28,6 +28,7 @@ setup(
         author_email="aldo@nullcube.com",
         license="MIT",
         url="http://www.qtile.org",
+
         packages = [
         "libqtile", 
         "libqtile.layout",
