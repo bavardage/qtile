@@ -32,7 +32,8 @@ setup(
         "libqtile", 
         "libqtile.layout",
         "libqtile.layout.sublayout",
-        "libqtile.widget"
+        "libqtile.widget",
+        "libqtile.newwidget",
         ],
         scripts = ["qtile", "qsh"],
         classifiers = [
