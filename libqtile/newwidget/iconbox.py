@@ -1,4 +1,5 @@
 from base import Widget
+from .. import command
 import Image
 
 class IconBox(Widget):
@@ -22,3 +23,20 @@ class IconBox(Widget):
         w,h = self.icon.size
         canvas.paste(self.icon, (0,0, w, h), self.icon)
         return canvas
+
+
+class ClickableIcon(IconBox):
+    def __init__(self, name, icon, command, align=Widget.ALIGN_LEFT, resize=True):
+        IconBox.__init__(self, name, icon, align, resize)
+        self.command = command
+
+    def click(self, x, y):
+        c = self.command
+        if c.check(self):
+            status, val = self.bar.qtile.server.call(
+                (c.selectors, c.name, c.args, c.kwargs)
+                )
+            if status in (command.ERROR, command.EXCEPTION):
+                s = "ClickableIcon command error %s: %s" % (c.name, val)
+        else:
+            return
