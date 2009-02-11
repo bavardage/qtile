@@ -28,6 +28,7 @@ class Bar:
             self.widgetData[w] = {}
             self.widgetData[w]['width'] = 0
             self.widgetData[w]['offset'] = 0
+            self.widgetData[w]['image'] = None
 
         self.edge = edge
         self.width = width
@@ -132,6 +133,14 @@ class Bar:
 
         self.need_arrange = False
 
+    def draw_widget(self, w):
+        data = self.widgetData[w]
+        im = w.draw(Image.new("RGBA",
+                              (data['width'], self.height)
+                              ))
+        self.widgetData[w]['image'] = im
+            
+
     def draw(self):
         if self.need_arrange:
             self.arrange_widgets()
@@ -139,10 +148,10 @@ class Bar:
                                (self.width, self.height), 
                                self.theme["bar_bg_normal"]
                                )
-        for w, data in self.widgetData.items():
-            im = w.draw(Image.new("RGBA",
-                                  (data['width'], self.height)
-                                  ))
+        for w, data in self.widgetData.items():    
+            if data['image'] is None:
+                self.draw_widget(w)
+            im = data['image']
             self.image.paste(im,
                              (data['offset'], 0),
                              im
@@ -153,6 +162,9 @@ class Bar:
                                          rgbimage
                                          )
 
+    def update_widget(self, w):
+        self.widgetData[w]['image'] = None
+        self.draw()
 
     def handle_Expose(self, e):
         self.draw()
