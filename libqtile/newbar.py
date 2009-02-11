@@ -71,6 +71,7 @@ class Bar:
         self._init_window()
 
         for w in self.widgets:
+            self.qtile.registerWidget(w)
             w._configure(self, theme) #all that they need to know
 
     def _init_window(self):
