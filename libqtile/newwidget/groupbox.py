@@ -11,7 +11,6 @@ class GroupBox(Widget):
         self.qtile = None
         self.groups = []
         self.groupnamewidths = {} #dict of text and widths
-        self.setup_hooks()
 
     def _configure(self, bar, theme):
         Widget._configure(self, bar, theme)
@@ -29,6 +28,8 @@ class GroupBox(Widget):
 
         self.width_req = sum([w for g,w in self.groupnamewidths.items()]) + \
             len(self.groups) * self.PADDING * 2 #pad each side
+        self.setup_hooks()
+
 
     def has_urgent(self, group):
         return len([w for w in group.windows if w.urgent]) > 0
@@ -57,12 +58,9 @@ class GroupBox(Widget):
                       
 
     def click(self, x, y):
-        print "GROUPBOX GOT A CLICK"
-        print "it was at %s %s" % (x,y)
         pos = 0
         for g in self.groups:
             w = self.groupnamewidths[g.name] +  2*self.PADDING
-            print "Group: %s, pos %s, pos+w %s" % (g.name, pos, pos+w)
             if x < pos + w:
                 g.cmd_toscreen()
                 break
@@ -76,4 +74,5 @@ class GroupBox(Widget):
         @Hooks("client-killed")
         @Hooks("client-urgent-hint-changed")
         def update_hook(datadict, qtile, *args):
-            print "%s needs redraw" % self.name
+            self.bar.update_widget(self)
+        
