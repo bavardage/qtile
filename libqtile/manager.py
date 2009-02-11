@@ -100,7 +100,10 @@ class Screen(command.CommandObject):
         self.width, self.height = width, height
         self.setGroup(group)
         for i in self.gaps:
-            i._configure(qtile, self, event, theme)
+            if hasattr(i, 'new_bar'):
+                i._configure(qtile, self, theme)
+            else:
+                i._configure(qtile, self, event, theme)
 
     @property
     def gaps(self):
@@ -153,6 +156,7 @@ class Screen(command.CommandObject):
             group._setScreen(self)
         self.event.fire("setgroup")
         self.qtile.event.fire("focus_change")
+        Hooks.call_hook("group-to-screen", group)
 
     def _items(self, name):
         if name == "layout":
@@ -344,6 +348,7 @@ class Group(command.CommandObject):
         else:
             screen = self.screens[screen]
         screen.setGroup(self)
+
     
     def move_groups(self, direction):
         currentgroup = self.qtile.groups.index(self)
