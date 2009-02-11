@@ -182,5 +182,4 @@ class Bar:
     #############
     @property
     def size(self):
-        return self.width
-        
+        return self.height        
