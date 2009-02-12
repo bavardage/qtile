@@ -1,0 +1,80 @@
+from base import Widget
+from ..manager import Hooks
+
+import ImageFont
+import ImageDraw
+
+class Taskbar(Widget):
+    PADDING = 4
+    def __init__(self, name, width, align=Widget.ALIGN_LEFT):
+        Widget.__init__(self, name, width, align)
+        self.qtile = None
+
+    def _configure(self, bar, theme):
+        Widget._configure(self, bar, theme)
+        self.qtile = self.bar.qtile
+
+        self.font = ImageFont.truetype(theme['taskbar_ttffont'],
+                                       theme['taskbar_ttffontsize'],
+                                       )
+        
+        self.setup_hooks()
+
+    def draw(self, canvas):
+        self.windows = self.bar.screen.group.windows
+        if not self.windows:
+            return canvas #no divide by zero for us
+        self.box_width = canvas.size[0]/len(self.windows)
+        
+        names_fgs = []        
+        for w in self.windows:
+            name = w.name
+            if self.font.getsize(name)[0] > \
+                    (self.box_width - 2*self.PADDING):
+                name = [name, '...']
+                while self.font.getsize("".join(name))[0] > \
+                        (self.box_width - 2*self.PADDING):
+                    name[0] = name[0][:-1]
+                    if not name[0]:
+                        break #It won't fit
+                    #TODO: work out how to deal with this properly
+                name = "".join(name)
+
+            if w.urgent:
+                fg = self.theme['taskbar_fg_urgent']
+            elif w is self.bar.screen.group.currentWindow:
+                fg = self.theme['taskbar_fg_focus']
+            else:
+                fg = self.theme['taskbar_fg_normal']
+            names_fgs.append((name, fg))
+
+                             
+        y = (canvas.size[1] - self.font.getsize(names_fgs[0][0])[1])/2
+        x = 0
+        draw = ImageDraw.Draw(canvas)
+        for name, fg in names_fgs:
+            draw.text((x+self.PADDING, y),
+                      name,
+                      font=self.font,
+                      fill = fg,
+                      )
+            x += self.box_width
+        return canvas
+
+    def click(self, x, y):
+        pos = 0
+        for w in self.windows:
+            if x < pos + self.box_width:
+                w.group.focus(w, False) #no mouse warp
+                break
+            else:
+                pos += self.box_width
+
+    def setup_hooks(self):
+        @Hooks("group-to-screen")
+        @Hooks("client-new")
+        @Hooks("client-killed")
+        @Hooks("client-urgent-hint-changed")
+        @Hooks("client-focus")
+        def update_hook(datadict, qtile, *args):
+            self.bar.update_widget(self) #request a redraw
