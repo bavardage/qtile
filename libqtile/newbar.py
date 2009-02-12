@@ -1,6 +1,7 @@
 
 import window
 from newwidget import Widget
+from manager import Hooks
 
 import Image
 
@@ -149,6 +150,9 @@ class Bar:
                                (self.width, self.height), 
                                self.theme["bar_bg_normal"]
                                )
+        
+        Hooks.call_hook("bar-draw", self.image)
+        
         for w, data in self.widgetData.items():    
             if data['image'] is None:
                 self.draw_widget(w)
