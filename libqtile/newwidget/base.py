@@ -1,6 +1,7 @@
 
 class Widget:
     ALIGN_LEFT, ALIGN_RIGHT = 1,2
+    WIDTH_AUTO = -1
     def __init__(self, name, width, align=ALIGN_LEFT):
         self.name = name
         self.width_req = width
