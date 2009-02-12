@@ -26,7 +26,7 @@ class Taskbar(Widget):
             return canvas #no divide by zero for us
         self.box_width = canvas.size[0]/len(self.windows)
         
-        names_fgs = []        
+        names_colors = []        
         for w in self.windows:
             name = w.name
             if self.font.getsize(name)[0] > \
@@ -42,17 +42,25 @@ class Taskbar(Widget):
 
             if w.urgent:
                 fg = self.theme['taskbar_fg_urgent']
+                bg = self.theme['taskbar_bg_urgent']
             elif w is self.bar.screen.group.currentWindow:
                 fg = self.theme['taskbar_fg_focus']
+                bg = self.theme['taskbar_bg_focus']
             else:
                 fg = self.theme['taskbar_fg_normal']
-            names_fgs.append((name, fg))
+                bg = self.theme['taskbar_bg_normal']
+            
+            names_colors.append((name, (fg, bg)))
 
                              
-        y = (canvas.size[1] - self.font.getsize(names_fgs[0][0])[1])/2
+        y = (canvas.size[1] - self.font.getsize(names_colors[0][0])[1])/2
         x = 0
         draw = ImageDraw.Draw(canvas)
-        for name, fg in names_fgs:
+        for name, colors in names_colors:
+            fg, bg = colors
+            draw.rectangle((x,0,x+self.box_width,canvas.size[1]),
+                           fill=bg,
+                           )
             draw.text((x+self.PADDING, y),
                       name,
                       font=self.font,
