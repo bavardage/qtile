@@ -42,6 +42,7 @@ class Bar:
         self.theme = None
 
         self.need_arrange = True
+        self.baseimage = None
         
     def _configure(self, qtile, screen, theme):
         self.qtile = qtile
@@ -74,6 +75,15 @@ class Bar:
         for w in self.widgets:
             self.qtile.registerWidget(w)
             w._configure(self, theme) #all that they need to know
+
+    
+    def _init_baseimage(self):
+        self.baseimage = Image.new("RGBA", 
+                               (self.width, self.height), 
+                               self.theme["bar_bg_normal"]
+                               )
+        
+        Hooks.call_hook("bar-draw", self.baseimage)
 
     def _init_window(self):
         c = self.qtile.display.screen().default_colormap.alloc_named_color(
@@ -146,12 +156,10 @@ class Bar:
     def draw(self):
         if self.need_arrange:
             self.arrange_widgets()
-        self.image = Image.new("RGBA", 
-                               (self.width, self.height), 
-                               self.theme["bar_bg_normal"]
-                               )
-        
-        Hooks.call_hook("bar-draw", self.image)
+        if not self.baseimage:
+            self._init_baseimage()
+
+        self.image = self.baseimage.copy()
         
         for w, data in self.widgetData.items():    
             if data['image'] is None:
@@ -172,6 +180,7 @@ class Bar:
         self.draw()
 
     def handle_Expose(self, e):
+        print "expose"
         self.draw()
         
     def handle_ButtonPress(self, e):
