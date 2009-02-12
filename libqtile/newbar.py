@@ -63,9 +63,9 @@ class Bar:
        
         if edge in (self.TOP, self.LEFT):
             self.y = 0
-        elif edge == BOTTOM:
+        elif edge == self.BOTTOM:
             self.y = self.screen.height - self.height
-        elif edge == RIGHT:
+        elif edge == self.RIGHT:
             self.y = self.screen.width - self.height
         
         self._init_window()
