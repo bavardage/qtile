@@ -4,8 +4,7 @@ import ImageDraw
 import ImageFont
 
 class TextBox(Widget):
-    WIDTH_AUTO = -1
-    def __init__(self, name, text, width=WIDTH_AUTO, align=Widget.ALIGN_LEFT):
+    def __init__(self, name, text, width=Widget.WIDTH_AUTO, align=Widget.ALIGN_LEFT):
         Widget.__init__(self, name, width, align)
         self.text = text
         self.font = None

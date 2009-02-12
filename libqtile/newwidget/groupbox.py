@@ -7,7 +7,7 @@ import ImageDraw
 class GroupBox(Widget):
     PADDING = 4
     def __init__(self, name, align=Widget.ALIGN_LEFT):
-        Widget.__init__(self, name, width=-1, align=align)
+        Widget.__init__(self, name, width=Widget.WIDTH_AUTO, align=align)
         self.qtile = None
         self.groups = []
         self.groupnamewidths = {} #dict of text and widths
