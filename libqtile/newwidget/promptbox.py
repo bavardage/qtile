@@ -34,15 +34,19 @@ class PromptBox(TextBox):
         self.set_text(" ".join((self.prompt, self.command_text)))
 
     def move_cursor(self, amount):
+        print "Moving cursor", amount
         if amount == 'beginning':
             self.cursor_position = 0
         elif amount == 'end':
             self.cursor_position = len(self.command_text)
         else:
-            self.cursor_position -= amount
+            self.cursor_position += amount
             if self.cursor_position < 0 or \
                     self.cursor_position > len(self.command_text):
-                self.cursor_position %= len(self.command_text)
+                if self.command_text:
+                    self.cursor_position %= len(self.command_text)
+                else:
+                    self.cursor_position = 0
             
     def handle_KeyPress(self, e):
         keysym = self.bar.qtile.display.keycode_to_keysym(e.detail, e.state)
@@ -57,7 +61,16 @@ class PromptBox(TextBox):
             self.done()
         elif keysym == XK.XK_BackSpace:
             if self.command_text:
-                self.command_text = self.command_text[:-1]
+                self.command_text = \
+                    self.command_text[:self.cursor_position-1] + \
+                    self.command_text[self.cursor_position:]
+                self.move_cursor(-1)
+                self.update()
+        elif keysym == XK.XK_Delete:
+            if self.command_text:
+                self.command_text = \
+                    self.command_text[:self.cursor_position] + \
+                    self.command_text[self.cursor_position+1:]
                 self.update()
         elif keysym == XK.XK_Left:
             self.move_cursor(-1)
