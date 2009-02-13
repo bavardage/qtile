@@ -18,3 +18,13 @@ class Widget:
 
     def click(self, x, y):
         pass
+
+    #################
+    # cmd_ stuff, not really sure of this
+    def _items(self, name):
+        if name == "bar":
+            return self.bar
+
+    def _select(self, name, sel):
+        if name == "bar":
+            return self.bar

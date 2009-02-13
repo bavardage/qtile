@@ -189,6 +189,11 @@ class _Window(command.CommandObject):
             event_mask=self._windowMask
         )
 
+    def addMask(self, mask):
+        self.window.change_attributes(
+            event_mask=self._windowMask|mask
+            )
+
     def place(self, x, y, width, height, border, borderColor):
         """
             Places the window at the specified location with the given size.
