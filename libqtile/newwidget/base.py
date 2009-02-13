@@ -1,5 +1,6 @@
+from .. import command
 
-class Widget:
+class Widget(command.CommandObject):
     ALIGN_LEFT, ALIGN_RIGHT = 1,2
     WIDTH_AUTO = -1
     def __init__(self, name, width, align=ALIGN_LEFT):
