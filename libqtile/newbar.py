@@ -61,7 +61,7 @@ class Bar:
             self.x = (self.screen.width - self.width)/2 #assume center
             #TODO: make the bars alignable
         else:
-            self.x = (self.screen.dheight + self.screen.dx) - (self.screen.dheight - self.width)/2
+            self.x = (self.screen.height - self.width)/2 #assume center
        
         if edge in (self.TOP, self.LEFT):
             self.y = 0
@@ -170,6 +170,12 @@ class Bar:
                              im
                              )
         rgbimage = self.image.convert("RGB")
+
+        if self.edge == self.LEFT:
+            rgbimage = rgbimage.rotate(90, expand=1)
+        elif self.edge == self.RIGHT:
+            rgbimage = rgbimage.rotate(-90, expand=1)
+        
         self.window.window.put_pil_image(self.gc,
                                          0, 0,
                                          rgbimage
@@ -180,13 +186,17 @@ class Bar:
         self.draw()
 
     def handle_Expose(self, e):
-        print "expose"
         self.draw()
         
     def handle_ButtonPress(self, e):
+        x, y = e.event_x, e.event_y
+        if self.edge == self.LEFT:
+            x,y = (self.width - y), x
+        elif self.edge == self.RIGHT:
+            x, y = y, (self.height - x)
         for w, d in self.widgetData.items():
-            if d['offset'] <= e.event_x < d['offset'] + d['width']:
-                w.click(e.event_x - d['offset'], e.event_y)
+            if d['offset'] <= x < d['offset'] + d['width']:
+                w.click(x - d['offset'], y)
                 
                                              
 
