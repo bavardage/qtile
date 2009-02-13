@@ -18,6 +18,8 @@ class IconBox(Widget):
             self.icon.thumbnail(new_size,
                                 Image.ANTIALIAS
                                 )
+            if self.icon.mode != "RGBA":
+                self.icon = self.icon.convert("RGBA")
     
     def draw(self, canvas):
         w,h = self.icon.size
