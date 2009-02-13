@@ -9,6 +9,7 @@ class PromptBox(TextBox):
         TextBox.__init__(self, name, prompt, width, align)
         self.prompt = prompt
         self.command_text = ''
+        self.cursor_position = 0
 
     def _configure(self, bar, theme):
         TextBox._configure(self, bar, theme)
@@ -25,22 +26,53 @@ class PromptBox(TextBox):
 
     def abort(self):
         self.command_text = ""
+        self.cursor_position = 0
         self.ungrab_keyboard()
         self.update()
 
     def update(self):
         self.set_text(" ".join((self.prompt, self.command_text)))
 
+    def move_cursor(self, amount):
+        if amount == 'beginning':
+            self.cursor_position = 0
+        elif amount == 'end':
+            self.cursor_position = len(self.command_text)
+        else:
+            self.cursor_position -= amount
+            if self.cursor_position < 0 or \
+                    self.cursor_position > len(self.command_text):
+                self.cursor_position %= len(self.command_text)
+            
     def handle_KeyPress(self, e):
-        keysym = self.bar.qtile.display.keycode_to_keysym(e.detail, 0)
-        keystring = XK.keysym_to_string(keysym)
-        if keystring == '\x1b':
+        keysym = self.bar.qtile.display.keycode_to_keysym(e.detail, e.state)
+        keystring = self.bar.qtile.display.lookup_string(keysym)
+        print "keysym", keysym
+        print "keycode", e.detail
+        print "keystring", keystring
+        print "state", e.state
+        if keysym == XK.XK_Escape:
             self.abort()
-        elif keystring == '\r':
+        elif keysym == XK.XK_Return:
             self.done()
+        elif keysym == XK.XK_BackSpace:
+            if self.command_text:
+                self.command_text = self.command_text[:-1]
+                self.update()
+        elif keysym == XK.XK_Left:
+            self.move_cursor(-1)
+        elif keysym == XK.XK_Right:
+            self.move_cursor(1)
+        elif keysym == XK.XK_Home:
+            self.move_cursor('beginning')
+        elif keysym == XK.XK_End:
+            self.move_cursor('end')
         else:
             if keystring:
-                self.command_text += keystring
+                self.command_text = list(self.command_text)
+                self.command_text.insert(self.cursor_position, keystring)
+                self.command_text = "".join(self.command_text)
+                self.cursor_position += 1
                 self.update()
 
     def cmd_start_grab(self):
