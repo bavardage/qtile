@@ -4,6 +4,7 @@ from newwidget import Widget
 from manager import Hooks
 
 import Image
+from Xlib import X
 
 '''
 Note:
@@ -43,6 +44,8 @@ class Bar:
 
         self.need_arrange = True
         self.baseimage = None
+        
+        self.keyboard_grabbers = []
         
     def _configure(self, qtile, screen, theme):
         self.qtile = qtile
@@ -97,13 +100,17 @@ class Bar:
                                              x, y, w, h,
                                              self.theme["bar_opacity"]
                                              )
+        self.window.name = "qtile-newbar"
         self.window.handle_Expose = self.handle_Expose
         self.window.handle_ButtonPress = self.handle_ButtonPress
+        self.window.handle_KeyPress = self.handle_KeyPress
         self.qtile.internalMap[self.window.window] = self.window
         
         self.gc = self.window.window.create_gc()
 
         self.window.unhide()  
+
+        self.window.addMask(X.KeyPressMask)
 
     
     def arrange_widgets(self):
@@ -198,8 +205,28 @@ class Bar:
             if d['offset'] <= x < d['offset'] + d['width']:
                 w.click(x - d['offset'], y)
                 
-                                             
 
+    def handle_KeyPress(self, e):
+        if not self.keyboard_grabbers:
+            print "no grabbing atm"
+            return
+        else:
+            self.keyboard_grabbers[-1].handle_KeyPress(e)
+
+    def grab_keyboard(self, widget):
+        self.keyboard_grabbers.append(widget)
+        if len(self.keyboard_grabbers) == 1:
+            self.window.window.grab_keyboard(0, X.GrabModeAsync, X.GrabModeAsync, X.CurrentTime)
+        else:
+            #it's already grabbed
+            return
+
+    def ungrab_keyboard(self, widget):
+        try:
+            self.qtile.display.ungrab_keyboard(X.CurrentTime)
+            self.keyboard_grabbers.remove(widget)
+        except:
+            pass
 
     #############
     # COMPATIBILITY: act like an old bar
