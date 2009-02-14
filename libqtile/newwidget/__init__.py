@@ -5,3 +5,4 @@ from textbox import TextBox
 from groupbox import GroupBox
 from taskbar import Taskbar
 from promptbox import PromptBox
+from systemtray import SystemTray
