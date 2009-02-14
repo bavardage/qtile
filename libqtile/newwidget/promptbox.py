@@ -21,7 +21,7 @@ class PromptBox(TextBox):
         self.bar.ungrab_keyboard(self)
 
     def done(self):
-        Hooks.call_hook("promptbox-%s-done", self.command_text)
+        Hooks.call_hook("promptbox-%s-done" % self.name, self.command_text)
         self.abort()
 
     def abort(self):
@@ -87,6 +87,9 @@ class PromptBox(TextBox):
                 self.command_text = "".join(self.command_text)
                 self.cursor_position += 1
                 self.update()
+
+    def click(self, x, y):
+        self.grab_keyboard()
 
     def cmd_start_grab(self):
         self.grab_keyboard()
