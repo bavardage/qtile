@@ -43,25 +43,30 @@ class Taskbar(Widget):
             if w.urgent:
                 fg = self.theme['taskbar_fg_urgent']
                 bg = self.theme['taskbar_bg_urgent']
+                border = self.theme['taskbar_border_urgent']
             elif w is self.bar.screen.group.currentWindow:
                 fg = self.theme['taskbar_fg_focus']
                 bg = self.theme['taskbar_bg_focus']
+                border = self.theme['taskbar_border_focus']
             else:
                 fg = self.theme['taskbar_fg_normal']
                 bg = self.theme['taskbar_bg_normal']
+                border = self.theme['taskbar_border_normal']
             
-            names_colors.append((name, (fg, bg)))
+            names_colors.append((name, (fg, bg, border)))
 
                              
         y = (canvas.size[1] - self.font.getsize(names_colors[0][0])[1])/2
         x = 0
         draw = ImageDraw.Draw(canvas)
         for name, colors in names_colors:
-            fg, bg = colors
-            draw.rectangle((x,0,x+self.box_width,canvas.size[1]),
-                           fill=bg,
+            fg, bg, border = colors
+            draw.rectangle((x+1,1,x+self.box_width-1,canvas.size[1]-1),
+                           fill=bg, outline=border,
                            )
-            draw.text((x+self.PADDING, y),
+            text_width = self.font.getsize(name)[0]
+            text_x = (self.box_width - text_width)/2 + x
+            draw.text((text_x, y),
                       name,
                       font=self.font,
                       fill = fg,
