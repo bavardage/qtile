@@ -29,35 +29,6 @@ import command, utils, window, confreader
 class QtileError(Exception): pass
 class ThemeSyntaxError(Exception): pass
 
-
-class Event:
-    events = set(
-        [
-            "setgroup",
-            "focus_change",
-            "window_add",
-            "window_name_change",
-        ]
-    )
-    def __init__(self, qtile):
-        self.qtile = qtile
-        self.subscriptions = {}
-
-    def subscribe(self, event, func):
-        if event not in self.events:
-            raise QtileError("Unknown event: %s"%event)
-        lst = self.subscriptions.setdefault(event, [])
-        if not func in lst:
-            lst.append(func)
-
-    def fire(self, event, *args, **kwargs):
-        if event not in self.events:
-            raise QtileError("Unknown event: %s"%event)
-        self.qtile.log.add("Internal event: %s(%s, %s)"%(event, args, kwargs))
-        for i in self.subscriptions.get(event, []):
-            i(*args, **kwargs)
-
-
 class Key:
     def __init__(self, modifiers, key, *commands):
         """
@@ -94,16 +65,13 @@ class Screen(command.CommandObject):
         self.top, self.bottom = top, bottom
         self.left, self.right = left, right
 
-    def _configure(self, qtile, theme, index, x, y, width, height, group, event):
-        self.qtile, self.theme, self.event = qtile, theme, event
+    def _configure(self, qtile, theme, index, x, y, width, height, group):
+        self.qtile, self.theme, = qtile, theme
         self.index, self.x, self.y = index, x, y,
         self.width, self.height = width, height
         self.setGroup(group)
         for i in self.gaps:
-            if hasattr(i, 'new_bar'):
-                i._configure(qtile, self, theme)
-            else:
-                i._configure(qtile, self, event, theme)
+            i._configure(qtile, self, theme)
 
     @property
     def gaps(self):
@@ -154,8 +122,6 @@ class Screen(command.CommandObject):
                 self.group._setScreen(None)
             self.group = group
             group._setScreen(self)
-        self.event.fire("setgroup")
-        self.qtile.event.fire("focus_change")
         Hooks.call_hook("group-to-screen", group)
 
     def _items(self, name):
@@ -187,7 +153,7 @@ class Screen(command.CommandObject):
         y = y or self.y
         w = w or self.width
         h = h or self.height
-        self._configure(self.qtile, self.theme, self.index, x, y, w, h, self.group, self.event)
+        self._configure(self.qtile, self.theme, self.index, x, y, w, h, self.group)
         for bar in [self.top, self.bottom, self.left, self.right]:
             if bar:
                 bar.resize()
@@ -265,7 +231,6 @@ class Group(command.CommandObject):
         else:
             self.currentWindow = window
         self.layout.focus(window)
-        self.qtile.event.fire("focus_change")
         self.layoutAll()
 
     def info(self):
@@ -278,7 +243,7 @@ class Group(command.CommandObject):
         )
 
     def add(self, window):
-        self.qtile.event.fire("window_add")
+        Hooks.call_hook("group-add", self, window)
         self.windows.add(window)
         window.group = self
         for i in self.layouts:
@@ -635,7 +600,6 @@ class Qtile(command.CommandObject):
                 self.display.get_default_screen()
             )
         self.root = defaultScreen.root
-        self.event = Event(self)
 
         self.atoms = dict(
             internal = self.display.intern_atom("QTILE_INTERNAL"),
@@ -677,7 +641,6 @@ class Qtile(command.CommandObject):
                     s["width"],
                     s["height"],
                     self.groups[i],
-                    self.event
                 )
                 self.screens.append(scr)
 
@@ -693,7 +656,6 @@ class Qtile(command.CommandObject):
                 defaultScreen.width_in_pixels,
                 defaultScreen.height_in_pixels,
                 self.groups[0],
-                self.event
             )
             self.screens.append(s)
         self.currentScreen = self.screens[0]

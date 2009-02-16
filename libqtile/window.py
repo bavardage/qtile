@@ -105,7 +105,7 @@ class _Window(command.CommandObject):
     def updateName(self):
         try:
             self.name = self.window.get_wm_name()
-            self.qtile.event.fire("window_name_change")
+            manager.Hooks.call_hook("client-name-changed")
         except (Xlib.error.BadWindow, Xlib.error.BadValue):
             # This usually means the window has just been deleted, and a new
             # focus will be acquired shortly. We don't raise an event for this.
