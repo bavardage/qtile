@@ -168,7 +168,7 @@ class _TextBox(_Widget):
         self.text = text
 
     def _configure(self, qtile, bar, theme):
-        _Widget._configure(self, qtile, bar, event, theme)
+        _Widget._configure(self, qtile, bar, theme)
         if theme.font:
             self.font = theme.font
 
