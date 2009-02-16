@@ -81,16 +81,19 @@ class SystemTray(Widget):
         width, height = canvas.size
         self.height = height #for configurenotify
         y = self.bar.window.y
-        pos = self.bar.widgetData[self]['offset'] + self.bar.window.x
+        pos = \
+            self.bar.widgetData[self]['offset'] + \
+            canvas.size[0] + \
+            self.bar.window.x
         print "offset is", pos
         for icoid, ico in self.icons.items():
-            x = pos
+            x = pos-height
             ico.configure(onerror=None, 
-                          x=pos, y=y, 
+                          x=x, y=y, 
                           width=height,
                           height=height
                           )
             print "mapping"
             ico.map()
-            pos += height
+            pos -= height
         return canvas
