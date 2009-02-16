@@ -70,6 +70,7 @@ class GroupBox(Widget):
 
     def setup_hooks(self):
         @Hooks("group-to-screen")
+        @Hooks("group-add")
         @Hooks("client-new")
         @Hooks("client-killed")
         @Hooks("client-urgent-hint-changed")
