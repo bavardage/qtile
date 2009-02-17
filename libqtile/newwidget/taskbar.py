@@ -78,6 +78,7 @@ class Taskbar(Widget):
         pos = 0
         for w in self.windows:
             if x < pos + self.box_width:
+                w.minimised = False
                 w.group.focus(w, False) #no mouse warp
                 break
             else:
