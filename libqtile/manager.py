@@ -240,12 +240,12 @@ class Group(command.CommandObject):
         )
 
     def add(self, window):
-        Hooks.call_hook("group-add", self, window)
         self.windows.add(window)
         window.group = self
         for i in self.layouts:
             i.add(window)
         self.focus(window, True)
+        Hooks.call_hook("group-add", self, window)
 
     def remove(self, window):
         self.windows.remove(window)
