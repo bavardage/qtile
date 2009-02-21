@@ -6,7 +6,7 @@ try:
 except:
     pass
 from libqtile.command import lazy
-from libqtile import layout, bar, widget
+from libqtile import layout, bar, widget, newbar, newwidget
 
  
 modkey = "mod4"
@@ -34,18 +34,25 @@ keys = [
 # App launching
 ##########
     Key([modkey], "Return", lazy.spawn("urxvt")),
-    Key(["mod1"], "grave", lazy.spawn("exe=`dmenu_path | dmenu` && eval \"exec $exe\"")),
+#    Key(["mod1"], "grave", lazy.spawn("exe=`dmenu_path | dmenu` && eval \"exec $exe\"")),
     Key(["control"], "grave", lazy.spawn("urxvt")),
     Key([modkey], "c", lazy.spawn("emacs .config/qtile/config.py")),
+    Key([modkey], "e", lazy.spawn("emacs")),
     Key([modkey], "p", lazy.spawn("xmms2 toggleplay")),
     Key([modkey], "s", lazy.spawn("xmms2 stop")),
     Key([modkey], "n", lazy.spawn("xmms2 next")),
 
 ##########
+# Widget Control
+##########
+    Key(["mod1"], "grave", lazy.widget['promptbox'].start_grab()),
+##########
 # Client Control
 ##########
     Key([modkey, "shift"], "c", lazy.window.kill()),
     Key(["mod1"],"F4", lazy.window.kill()), 
+    Key([modkey], "m", lazy.window.minimise()),
+    Key([modkey, "shift"], "m", lazy.group.unminimise_all()),
 ]
 
 ##########
@@ -66,7 +73,7 @@ for key, x, y in [("Left", -10, 0),
 ## Groups
 ##########
 
-groups = ["1:irc", "2:web", "3", "4", "5", "6", "7:mail"]
+groups = ["1:irc", "2:web", "drei", "vier", unicode("fünf", 'utf-8'), "sechs", "7:mail"]
 
 keys.append(Key([modkey], "Right", lazy.group.nextgroup()))
 keys.append(Key([modkey], "Left", lazy.group.prevgroup()))
@@ -99,6 +106,14 @@ theme = Theme(
     specials = {
         'magnify': {'border_width': 5,},
         'bar': {'opacity': 0.8,},
+        'archlogo': {
+            'ttffont': '/home/ben/.fonts/openlogos-archupdate.ttf',
+            'ttffontsize': 28,
+            },
+        'taskbar': {
+            'ttffontsize': 20,
+            'bg_focus': "#0066a1",
+            }
         }
     )
 
@@ -127,33 +142,77 @@ layouts = [
 ##########
 screens = [
     Screen(
-        top=bar.Bar(
+        top=newbar.Bar(
             [
-                widget.IconBox("archicon", "/home/ben/Pictures/archicon.png"),
-                widget.TTFGroupBox(),
-                widget.ClickableIcon("irssi", 
-                                     "/home/ben/Pictures/irssi_white.png",
-                                     lazy.spawn("~/Scripts/irssi.sh"),
-                                     ),
-                widget.ClickableIcon("browser",
-                                     "/usr/share/icons/HighContrastLargePrintInverse/48x48/apps/mozilla-icon.png",
-                                     lazy.spawn("conkeror"),
-                                     ),
-                widget.ClickableIcon("email",
-                                     "/usr/share/icons/HighContrastLargePrintInverse/48x48/apps/evolution.png",
-                                     lazy.spawn("thunderbird"),
-                                     ),
-                widget.ClickableIcon("term",
-                                     "/usr/share/icons/HighContrastLargePrintInverse/48x48/apps/terminal.png",
-                                     lazy.spawn("urxvt"),
-                                     ),
-                widget.TextBox("spacer", " ", 5),
-                widget.TTFWindowName(),
-              #  widget.TTFTextBox("ttffont", "hello guys"),
-                widget.TTFTextBox("clock", " Mon Jan 01 00:00AM "), #hopefully the default width'll be right
+                newwidget.TextBox("archlogo", "B"),
+                newwidget.GroupBox("groupbox"),
+                newwidget.TextBox("clock", 
+                                  " Mon Jan 01 00:00AM ",
+                                  align=newwidget.Widget.ALIGN_RIGHT
+                                  ),
                 ],
-            25),
-        ),
+            newbar.Bar.TOP,
+            height=28,
+            width=640,
+            ),
+        bottom=newbar.Bar(
+            [
+                newwidget.PromptBox("promptbox",
+                                    "run>",
+                                    700,
+                                    ),
+                newwidget.SystemTray("systray", 100),
+                ],
+            newbar.Bar.BOTTOM,
+            height=20,
+            width=800,
+            ),
+        left=newbar.Bar(
+            [
+                newwidget.ClickableIcon("ico", 
+                                        "/home/ben/Pictures/irssi_white.png",
+                                        lazy.spawn("~/Scripts/irssi.sh"),
+                                        ),
+                newwidget.ClickableIcon("browser",
+                                        "/usr/share/icons/HighContrastLargePrintInverse/48x48/apps/mozilla-icon.png",
+                                        lazy.spawn("conkeror"),
+                                        ),
+                newwidget.ClickableIcon("email",
+                                        "/usr/share/icons/HighContrastLargePrintInverse/48x48/apps/evolution.png",
+                                        lazy.spawn("thunderbird"),
+                                        ),
+                newwidget.ClickableIcon("term",
+                                        "/usr/share/icons/HighContrastLargePrintInverse/48x48/apps/terminal.png",
+                                        lazy.spawn("urxvt"),
+                                        ),
+                newwidget.ClickableIcon("emacs",
+                                        "/usr/share/icons/HighContrastLargePrintInverse/48x48/apps/accessories-text-editor.png",
+                                        lazy.spawn("emacs"),
+                                        ),
+                newwidget.ClickableIcon("thunar",
+                                        "/usr/share/icons/HighContrastLargePrintInverse/48x48/apps/file-manager.png",
+                                        lazy.spawn("thunar"),
+                                        ),
+                newwidget.ClickableIcon("gimp",
+                                        "/usr/share/icons/HighContrastLargePrintInverse/48x48/apps/gimp.png",
+                                        lazy.spawn("gimp"),
+                                        ),
+                
+                ],
+            newbar.Bar.LEFT,
+            height=28,
+            width=200,
+            ),
+        right=newbar.Bar(
+            [
+                newwidget.Taskbar("taskbar",
+                                  1000, #fill it all
+                                  )
+                ],
+            newbar.Bar.RIGHT,
+            height=20,
+            ),
+        )
     ]
 
 try:
@@ -185,6 +244,7 @@ try:
             if self.matches(client):
                 if self.floating:
                     client.floating = True
+                    client.group.layoutAll()
                 if self.group:
                     client.cmd_togroup(self.group)
             else:
@@ -218,7 +278,7 @@ try:
         ticks = datadict.get(key, 0)
         if not ticks: #if == 0
             time = time.strftime("%a %b %d %I:%M%p")
-            qtile.widgetMap.get("clock").update(time)
+            qtile.widgetMap.get("clock").set_text(time)
         datadict[key] = (ticks + 1) % 100 #run every 100 ticks, i.e. every second
 
     @Hooks("client-killed")
@@ -252,6 +312,26 @@ try:
             return
         print "URGENCY CHANGED FOR %s" % client.name
         print "client is urgent?", client.urgent
+
+    @Hooks("bar-draw")
+    def bar_draw(datadict, qtile, canvas):
+        print "Bar-draw"
+        if canvas is None:
+            return
+        import ImageDraw
+        draw = ImageDraw.Draw(canvas)
+        w,h = canvas.size
+        pos = -20
+        while pos < w:
+            draw.line((pos, 0, pos+h, h), fill="#000000")
+            pos += 3
+
+    @Hooks("promptbox-promptbox-done")
+    def prompt(datadict, qtile, command):
+        qtile.cmd_spawn(command)
+        
+    def group_add(datadict, qtile, client):
+        print "GROUP ADD"
 
 except:
     print "oh dear no hooks"
