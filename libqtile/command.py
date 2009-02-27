@@ -137,7 +137,7 @@ class _CommandTree(object):
 
 class _TLayout(_CommandTree):
     name = "layout"
-    _contains = ["group", "window", "screen"]
+    _contains = ["group", "window", "screen", "modifiers"]
 
 
 class _TWidget(_CommandTree):
@@ -164,6 +164,10 @@ class _TGroup(_CommandTree):
     name = "group"
     _contains = ["layout", "window", "screen"]
 
+class _TModifiers(_CommandTree):
+    name = "modifiers"
+    _contains = []
+
 
 _TreeMap = {
     "layout":   _TLayout,
@@ -172,6 +176,7 @@ _TreeMap = {
     "window":   _TWindow,
     "screen":   _TScreen,
     "group":    _TGroup,
+    "modifiers": _TModifiers,
 }
 
 
