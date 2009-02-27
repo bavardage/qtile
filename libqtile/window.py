@@ -33,6 +33,12 @@ class _Window(command.CommandObject):
         self.hidden = True
         window.change_attributes(event_mask=self._windowMask)
         self.x, self.y, self.width, self.height = None, None, None, None
+        self.next_placement = {
+            'x': -1, 'y': -1, 
+            'w': -1, 'h': -1,
+            'bw': -1, 'bc': -1, #border width, colour
+            'o': 1.0, 'hi': False, #opacity, hidden
+            }
         self.borderwidth = 0
         self.name = "<no name>"
         self.states = ["normal"]
