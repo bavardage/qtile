@@ -155,15 +155,22 @@ class SubLayout:
                   and self.clientStack.focus_history[0] is client \
                   else (self.normal_border, 0.5)
               )
-        client.place(x,
-                     y,
-                     w - 2*self.border_width,
-                     h - 2*self.border_width,
-                     self.border_width,
-                     bc
-                     )
-        client.unhide()
-        client.opacity = opacity
+
+        next_placement = {
+            'x': x,
+            'y': y,
+            'w': w - 2*self.border_width,
+            'h': h - 2*self.border_width,
+            'bw': self.border_width,
+            'bc': bc,
+            'o': opacity,
+            }
+        #copy key by key, since not all values are given e.g. hidden
+        for k,v in next_placement.items():
+            client.next_placement[k] = v
+    
+    def hide_client(self, client):
+        client.next_placement['hi'] = True
 
     def command_get_arg(self, args, kwargs, name, default):
         if name in kwargs:
@@ -269,4 +276,4 @@ class Minimised(SubLayout):
         return (Rect(), r) #we want nothing
     
     def configure(self, r, client):
-        client.hide()
+        self.hide_client(client)

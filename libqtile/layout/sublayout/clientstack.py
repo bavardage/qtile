@@ -30,13 +30,31 @@ class ClientStack(Layout):
 
     def layout(self, windows):
         sl = self.sublayouts[self.current_sublayout]
+        # determine the area available
         rect = Rect(self.group.screen.dx,
                     self.group.screen.dy,
                     self.group.screen.dwidth,
                     self.group.screen.dheight,
                     )
-        sl.layout(rect, self.clients) #screw the group list of windows
-        #we think we know best...
+        # set the windows' next_placement
+        sl.layout(rect, self.clients)
+        #now actually place the windows
+        for c in self.clients:
+            p = c.next_placement
+            try:
+                c.place(p['x'], p['y'],
+                        p['w'], p['h'],
+                        p['bw'], p['bc']
+                        )
+                c.opacity = p['o']
+                if p['hi']:
+                    c.hide()
+                else:
+                    c.unhide()
+            except:
+                print "Something went wrong"
+                print "Window placement errored"
+            
 
     def configure(self, window):
         # Oh dear, this shouldn't be happening, oh dear what can the matter be, oh dear help help help
@@ -139,6 +157,10 @@ class ClientStack(Layout):
                 self.clients[current_focus_index] is not self.focused:
                     current_focus_index = (current_focus_index + offset) % len(self.clients)
         self.group.focus(self.clients[current_focus_index], self.mouse_warp)
+
+############
+# Commands #
+############
 
     def cmd_up(self):
         """
