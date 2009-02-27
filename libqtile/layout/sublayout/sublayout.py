@@ -43,14 +43,14 @@ class Rect:
 
 
 class SubLayout:
-    def __init__(self, clientStack, theme, parent=None, autohide=True):
+    def __init__(self, clientStack, parent=None, autohide=True):
         """
            autohide - does it hide itself if there are no clients
         """
         self.clientStack = clientStack
+        self.theme = self.clientStack.theme
         self.clients = []
         self.sublayouts = []
-        self.theme = theme
         self.parent = parent
         self.autohide = autohide
         self.windows = []
@@ -203,21 +203,18 @@ class TopLevelSubLayout(SubLayout):
     '''
        This class effectively wraps a sublayout, and automatically adds a floating sublayout,
     '''
-    def __init__(self, sublayout_data, clientStack, theme):
+    def __init__(self, sublayout_data, clientStack):
         WrappedSubLayout, args = sublayout_data
-        SubLayout.__init__(self, clientStack, theme)
+        SubLayout.__init__(self, clientStack)
         self.sublayouts.append(Minimised(clientStack,
-                                         theme,
                                          parent=self
                                          )
                                )
         self.sublayouts.append(Floating(clientStack,
-                                        theme,
                                         parent=self
                                         )
                                )
         self.sublayouts.append(WrappedSubLayout(clientStack,
-                                         theme,
                                          parent=self,
                                          **args
                                          )

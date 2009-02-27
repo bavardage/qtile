@@ -4,12 +4,12 @@ from sublayout import VerticalStack, SubLayout, Rect
 
 class SubTile(SubLayout):
     arrangements = ["left", "right"]
-    def __init__(self, clientStack, theme, parent=None, autohide=True, master_windows=1, ratio=0.618, arrangement="left", expand=True):
+    def __init__(self, clientStack, parent=None, autohide=True, master_windows=1, ratio=0.618, arrangement="left", expand=True):
         self.master_windows = master_windows
         self.ratio = ratio
         self.arrangement = (arrangement if arrangement in self.arrangements else self.arrangements[0])
         self.expand = expand
-        SubLayout.__init__(self, clientStack, theme, parent, autohide)
+        SubLayout.__init__(self, clientStack, parent, autohide)
 
     def _init_sublayouts(self):
         class MasterWindows(VerticalStack):
@@ -34,13 +34,11 @@ class SubTile(SubLayout):
                     return (rslave, rmaster)
             
         self.sublayouts.append(SlaveWindows(self.clientStack,
-                                            self.theme,
                                             parent=self,
                                             autohide=self.expand,
                                             )
                                )
         self.sublayouts.append(MasterWindows(self.clientStack,
-                                             self.theme,
                                              parent=self,
                                              autohide=False
                                              )
