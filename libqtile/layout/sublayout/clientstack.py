@@ -1,6 +1,7 @@
 from ..base import Layout
 from sublayout import SubLayout, Rect, TopLevelSubLayout
 from ... import command, utils
+from ...manager import Hooks
 
 class ClientStack(Layout):
     name="tile"
@@ -10,7 +11,7 @@ class ClientStack(Layout):
     FOCUS_TO_NEXT, FOCUS_TO_PREVIOUS, \
     FOCUS_TO_LAST_FOCUSED = \
         (5, 6, 7, 8, 9)
-    def __init__(self, SubLayouts, add_mode=ADD_TO_TOP,
+    def __init__(self, SubLayouts, Modifiers=None, add_mode=ADD_TO_TOP,
                  focus_mode=FOCUS_TO_TOP,
                  focus_history_length=10, mouse_warp = False):
         Layout.__init__(self)
@@ -27,6 +28,8 @@ class ClientStack(Layout):
         self.sublayouts = []
         self.current_sublayout = 0
         self.SubLayouts = SubLayouts
+        self.layout_modifiers = {}
+        self.Modifiers = (Modifiers if Modifiers else [])
 
     def layout(self, windows):
         sl = self.sublayouts[self.current_sublayout]
@@ -38,6 +41,11 @@ class ClientStack(Layout):
                     )
         # set the windows' next_placement
         sl.layout(rect, self.clients)
+        # modify the placement
+        for c in self.clients:
+            for name,m in self.layout_modifiers.items():
+                if m.active:
+                    m.modify(rect, c)
         #now actually place the windows
         for c in self.clients:
             p = c.next_placement
@@ -54,7 +62,13 @@ class ClientStack(Layout):
             except:
                 print "Something went wrong"
                 print "Window placement errored"
-            
+
+    def register_modifier_hooks(self):
+        @Hooks("modifier-activated")
+        @Hooks("modifier-disactivated")
+        @Hooks("modifier-toggled")
+        def modifiers_changed(datadict, qtile, modifier):
+            self.group.layoutAll()
 
     def configure(self, window):
         # Oh dear, this shouldn't be happening, oh dear what can the matter be, oh dear help help help
@@ -77,6 +91,11 @@ class ClientStack(Layout):
                                                   c,
                                                   )
                                 )
+        c.layout_modifiers = {}
+        for Modifier, kwargs in self.Modifiers:
+            m = Modifier(**kwargs)
+            c.layout_modifiers[m.name] = m
+        c.register_modifier_hooks()
         c.current_sublayout = 0
         return c
 
@@ -161,6 +180,18 @@ class ClientStack(Layout):
 ############
 # Commands #
 ############
+
+    def _items(self, name):
+        if name == "modifiers":
+            return True, self.layout_modifiers.keys()
+        else:
+            return Layout._items(self, name)
+
+    def _select(self, name, sel):
+        if name == "modifiers":
+            return self.layout_modifiers[sel]
+        else:
+            return Layout._select(self, name, sel)
 
     def cmd_up(self):
         """
