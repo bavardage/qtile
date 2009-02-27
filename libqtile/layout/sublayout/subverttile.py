@@ -25,14 +25,12 @@ class SubVertTile(SubTile):
                     return (rslave, rmaster)
         
         self.sublayouts.append(SlaveWindows(self.clientStack,
-                                            self.theme,
                                             parent=self,
                                             autohide=self.expand
                                             )
                                )
         self.sublayouts.append(MasterWindows(self.clientStack,
-                                             self.theme,
-                                             parent=self,
+                                              parent=self,
                                              autohide=self.expand
                                              )
                                )

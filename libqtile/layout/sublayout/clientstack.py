@@ -57,7 +57,6 @@ class ClientStack(Layout):
         for SL, kwargs in self.SubLayouts:
             c.sublayouts.append(TopLevelSubLayout((SL, kwargs),
                                                   c,
-                                                  theme,
                                                   )
                                 )
         c.current_sublayout = 0
