@@ -28,7 +28,13 @@ setup(
         author_email="aldo@nullcube.com",
         license="MIT",
         url="http://www.qtile.org",
-        packages = ["libqtile", "libqtile.layout", "libqtile.widget", "libqtile.newwidget"],
+        packages = [
+        "libqtile", 
+        "libqtile.layout",
+        "libqtile.layout.sublayout",
+        "libqtile.widget",
+        "libqtile.newwidget",
+        ],
         scripts = ["qtile", "qsh"],
         classifiers = [
             "Intended Audience :: End Users/Desktop",

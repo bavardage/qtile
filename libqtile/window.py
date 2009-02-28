@@ -37,12 +37,20 @@ class _Window(command.CommandObject):
         self.floating = False
         self.minimised = False
         self.floatDimensions = {'x': 0, 'y': 0, 'w': 0, 'h': 0}
-        self.urgent = False
-        self.nofocus = False
+        self.hints = {
+            'input': True,
+            'state': Xutil.NormalState, #Normal state
+            'icon_pixmap': None,
+            'icon_window': None,
+            'icon_x': 0,
+            'icon_y': 0,
+            'icon_mask': 0,
+            'window_group': None,
+            'urgent': False,
+            }
         self.updateName()
-        self.updateFloating()            
-        self.updateUrgency()
-        self.updateFocus()
+        self.updateFloating()
+        self.updateHints()
 
     def updateName(self):
         try:
@@ -79,35 +87,51 @@ class _Window(command.CommandObject):
             }
         self.x, self.y, self.width, self.height = g.x, g.y, g.width, g.height
 
-    def updateUrgency(self):
-        old_value = self.urgent
+
+    def updateHints(self):
+        ''' 
+          update the local copy of the window's WM_HINTS
+          http://tronche.com/gui/x/icccm/sec-4.html#WM_HINTS
+        '''
+        
+        def update_hint(hint, value, hook=True):
+            if self.hints[hint] != value:
+                self.hints[hint] = value
+                if hook:
+                    manager.Hooks.call_hook(
+                        "client-%s-hint-changed" % hint, 
+                        self)
         try:
             h = self.window.get_wm_hints()
         except (Xlib.error.BadWindow, Xlib.error.BadValue):
             return
         if h is None:
             return
+
         flags = h.flags
-
-        if flags & 256: # 256 is UrgencyHint, but for some reason, Xutil doesn't seem to have it
-                        # no clue why not :(
-            self.urgent = True
+        if flags & Xutil.InputHint:
+            update_hint('input', h.input)
+        if flags & Xutil.StateHint:
+            update_hint('state', h.initial_state)
+        if flags & Xutil.IconPixmapHint:
+            update_hint('icon_pixmap', h.icon_pixmap)
+        if flags & Xutil.IconWindowHint:
+            update_hint('icon_window', h.icon_window)
+        if flags & Xutil.IconPositionHint:
+            update_hint('icon_x', h.icon_x, hook=False)
+            update_hint('icon_y', h.icon_y, hook=False)
+        if flags & Xutil.IconMaskHint:
+            update_hint('icon_mask', h.icon_mask)
+        if flags & Xutil.WindowGroupHint:
+            update_hint('window_group', h.window_group)
+        if flags & 256: #urgency_hint
+            update_hint('urgent', True)
         else:
-            self.urgent = False
-        if self.urgent != old_value:
-            manager.Hooks.call_hook("client-urgent-hint-changed", self)
+            update_hint('urgent', False)
 
-    def updateFocus(self):
-        try:
-            h = self.window.get_wm_hints()
-        except:
-            return
-        if h is None:
-            return
-        if not (h.flags & Xutil.InputHint):
-            self.nofocus = True
-        else:
-            self.nofocus = not h.input
+    @property
+    def urgent(self):
+        return self.hints['urgent']
 
     def info(self):
         return dict(
@@ -118,24 +142,6 @@ class _Window(command.CommandObject):
             height = self.height,
             id = str(hex(self.window.id))
         )
-
-    @property
-    def opacity(self):
-        opacity = self.window.get_property(
-            self.qtile.display.get_atom('_NET_WM_WINDOW_OPACITY'),
-            Xatom.CARDINAL,
-            0,
-            32
-            )
-        if not opacity:
-            return 1.0
-        else:
-            value = opacity.value[0]
-            as_float = round(
-                (float(value)/0xffffffff), 
-                2  #2 decimal places
-                )
-            return as_float
 
     def setOpacity(self, opacity):
         if 0.0 <= opacity <= 1.0:
@@ -148,6 +154,25 @@ class _Window(command.CommandObject):
                 )
         else:
             return
+
+    def getOpacity(self):
+        opacity = self.window.get_property(
+            self.qtile.display.get_atom('_NET_WM_WINDOW_OPACITY'),
+            Xatom.CARDINAL,
+            0,
+            32
+            )
+        if not opacity:
+            return 1.0
+        else:
+            value = opacity.value[0]
+            as_float = round(
+                (float(value)/0xffffffff),
+                2  #2 decimal places
+                )
+            return as_float
+
+    opacity = property(getOpacity, setOpacity)
             
     def notify(self):
         e = event.ConfigureNotify(
@@ -229,7 +254,7 @@ class _Window(command.CommandObject):
             )
 
     def focus(self, warp):
-        if not self.hidden and not self.nofocus:
+        if not self.hidden and self.hints['input']:
             self.window.set_input_focus(
                 X.RevertToPointerRoot,
                 X.CurrentTime
@@ -371,7 +396,7 @@ class Internal(_Window):
         i = Internal(win, qtile)
         i.place(x, y, width, height, 0, None)
         i.setProp("internal", True)
-        i.setOpacity(opacity)
+        i.opacity = opacity
         return i
 
     def __repr__(self):
@@ -396,18 +421,21 @@ class Window(_Window):
             self.notify()
 
     def handle_PropertyNotify(self, e):
-        if e.atom == Xatom.WM_TRANSIENT_FOR:
-            utils.outputToStderr("transient")
-        elif e.atom == Xatom.WM_HINTS:
-            self.updateUrgency()
-            utils.outputToStderr("hints")
-        elif e.atom == Xatom.WM_NORMAL_HINTS:
-            utils.outputToStderr("normal_hints")
-        elif e.atom == Xatom.WM_NAME:
+        name = self.qtile.display.get_atom_name(e.atom)
+        if name == "WM_TRANSIENT_FOR":
+            print >> sys.stderr, "transient"
+        elif name == "WM_HINTS":
+            self.updateHints()
+            print >> sys.stderr, "hints"
+        elif name == "WM_NORMAL_HINTS":
+            print >> sys.stderr, "normal_hints"
+        elif name == "WM_NAME":
             self.updateName()
             manager.Hooks.call_hook("client-name-updated", self)
+        elif name == "_NET_WM_WINDOW_OPACITY":
+            pass
         else:
-            utils.outputToStderr(e)
+            print >> sys.stderr, "Unknown window property: ", name
 
     def _items(self, name):
         if name == "group":
@@ -485,10 +513,10 @@ class Window(_Window):
         self.group.layoutAll()
 
     def cmd_semitransparent(self):
-        self.setOpacity(0.5)
+        self.opacity = 0.5
 
     def cmd_opacity(self, opacity):
-        self.setOpacity(opacity)
+        self.opacity = opacity
 
     def cmd_minimise(self):
         self.minimised = True
