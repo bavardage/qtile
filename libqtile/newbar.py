@@ -2,6 +2,7 @@
 import window
 from newwidget import Widget
 from manager import Hooks
+from command import CommandObject, CommandError
 
 import Image
 from Xlib import X
@@ -16,7 +17,7 @@ y is vertical displacement
 '''
 
 
-class Bar:
+class Bar(CommandObject):
 
     new_bar = True
 
@@ -233,4 +234,61 @@ class Bar:
     #############
     @property
     def size(self):
-        return self.height        
+        return self.height   
+
+    @property
+    def position(self):
+        if self.edge == self.TOP:
+            return "top"
+        elif self.edge == self.BOTTOM:
+            return "bottom"
+        elif self.edge == self.LEFT:
+            return "left"
+        elif self.edge == self.RIGHT:
+            return "right"
+
+    #############
+    # COMMAND OBJECT STUFF
+    #############
+    def cmd_fake_click(self, x, y):
+        class _fake: pass
+        fake = _fake()
+        fake.event_x = x
+        fake.event_y = y
+        self.handle_ButtonPress(fake)
+
+    def cmd_fake_keypress(self, modifiers, key):
+        from Xlib import XK
+        from . import utils
+        import Xlib.protocol.event as event
+        keysym = XK.string_to_keysym(key)
+        if keysym == 0:
+            raise CommandError("Unknown key: %s" % key)
+        keycode = self.qtile.display.keysym_to_keycode(keysym)
+        try:
+            mask = utils.translateMasks(modifiers)
+        except QtileError, v:
+            return str(v)
+        class _fake: pass
+        fake = _fake()
+        fake.state = mask
+        fake.detail = keycode
+        self.handle_KeyPress(fake)
+
+    def cmd_info(self):
+        return self.info()
+
+    def info(self):
+        print "in barinfo"
+        widgetdata = {}
+        for k,v in self.widgetData.items():
+            widgetdata[k.name] = {'offset': v['offset'], 
+                                  'width': v['width'] }
+        return dict(
+            edge = self.edge,
+            width = self.width,
+            height = self.height,
+            window = self.window.window.id,
+            widgets = [i.info() for i in self.widgets],
+            widgetdata = widgetdata,
+            )
