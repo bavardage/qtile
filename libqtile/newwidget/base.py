@@ -29,3 +29,13 @@ class Widget(command.CommandObject):
     def _select(self, name, sel):
         if name == "bar":
             return self.bar
+
+    def cmd_info(self):
+        return self.info()
+
+    def info(self):
+        return dict(
+            name = self.name,
+            align = self.align,
+            width_req = self.width_req,
+            )
