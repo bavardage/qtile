@@ -93,3 +93,9 @@ class PromptBox(TextBox):
 
     def cmd_start_grab(self):
         self.grab_keyboard()
+
+    def cmd_get(self):
+        return self.command_text
+
+    def cmd_cursor_position(self):
+        return self.cursor_position
