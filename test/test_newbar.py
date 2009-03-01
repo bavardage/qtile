@@ -41,7 +41,15 @@ class GBConfig:
                 libqtile.newbar.Bar.BOTTOM,
                 height=20,
                 width=800,
-                )
+                ),
+            left = libqtile.newbar.Bar(
+                [
+                    libqtile.newwidget.Taskbar("taskbar", 400),
+                    ],
+                libqtile.newbar.Bar.LEFT,
+                height=20,
+                width=400,
+                ),
             )
         ]
     theme = theme
@@ -50,7 +58,6 @@ class uWidgets(utils.QtileTests):
     config = GBConfig()
 
     def test_draw(self):
-        self.testWindow("one")
         b = self.c.bar['bottom'].info()
         assert b['widgets'][0]['name'] == "groupbox"
 
@@ -64,6 +71,18 @@ class uWidgets(utils.QtileTests):
         assert self.c.groups()["a"]["screen"] == None
         self.c.bar["bottom"].fake_click(10, 10)
         assert self.c.groups()["a"]["screen"] == 0
+
+    def test_taskbar_click(self):
+        one = self.testWindow("one")
+        two = self.testWindow("two")
+        assert self.c.groups()["a"]["focus"] == "two"
+        self.c.bar["left"].fake_click(10,10)
+        assert self.c.groups()["a"]["focus"] == "one"
+        #note: this won't actually ALWAYS pass
+        #since the taskbar gets its list of windows from group
+        #which stores them as a set
+        #which doesn't guarentee ordering
+        #so the first item on the taskbar isn't guarenteed
 
     def test_clickableicon(self):
         self.c.group["a"].toscreen()
