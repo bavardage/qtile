@@ -163,6 +163,7 @@ class SubLayout:
             'bw': self.border_width,
             'bc': bc,
             'o': opacity,
+            'hi': False,
             }
         #copy key by key, since not all values are given e.g. hidden
         for k,v in next_placement.items():
