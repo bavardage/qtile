@@ -325,7 +325,8 @@ class _Window(command.CommandObject):
             event_mask=self._windowMask|mask
             )
 
-    def place(self, x, y, width, height, border, borderColor):
+    def place(self, x, y, width, height, border, borderColor,
+              stack_mode = X.Above, sibling = X.NONE):
         """
             Places the window at the specified location with the given size.
         """
@@ -335,7 +336,9 @@ class _Window(command.CommandObject):
             y=y,
             width=width,
             height=height,
-            border_width=border
+            border_width=border,
+            sibling = sibling.window, #sibling is a client
+            stack_mode = X.Above,
         )
         if borderColor is not None:
             self.window.change_attributes(
