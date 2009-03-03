@@ -1,6 +1,6 @@
 from ..base import Layout
 from sublayout import SubLayout, Rect, TopLevelSubLayout
-from ... import command, utils
+from ... import command, utils, window
 from ...manager import Hooks
 
 class ClientStack(Layout):
