@@ -151,11 +151,11 @@ class SubLayout:
 
     def place(self, client, x, y, w, h,
               stacking=window.STACKING_NORMAL):
-        bc, opacity = ((self.focused_border, 1.0) \
+        bc = (self.focused_border \
                   if self.clientStack.focus_history \
                   and self.clientStack.focus_history[0] is client \
-                  else (self.normal_border, 0.5)
-              )
+                  else self.normal_border)
+              
 
         next_placement = {
             'x': x,
@@ -164,7 +164,6 @@ class SubLayout:
             'h': h - 2*self.border_width,
             'bw': self.border_width,
             'bc': bc,
-            'o': opacity,
             'hi': False,
             'stacking': stacking,
             }
