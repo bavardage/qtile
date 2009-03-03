@@ -2,6 +2,7 @@ from ..base import Layout
 from sublayout import SubLayout, Rect, TopLevelSubLayout
 from ... import command, utils, window
 from ...manager import Hooks
+from Xlib import X
 
 class ClientStack(Layout):
     name="tile"
@@ -47,13 +48,15 @@ class ClientStack(Layout):
                 if m.active:
                     m.modify(rect, c)
         #now actually place the windows
+        last_placed = None
         for c in sorted(self.clients,
                         key=lambda c:c.next_placement['stacking']):
             p = c.next_placement
             try:
                 c.place(p['x'], p['y'],
                         p['w'], p['h'],
-                        p['bw'], p['bc']
+                        p['bw'], p['bc'],
+                        sibling=last_placed,
                         )
                 c.opacity = p['o']
                 if p['hi']:
@@ -63,6 +66,7 @@ class ClientStack(Layout):
             except:
                 print "Something went wrong"
                 print "Window placement errored"
+            last_placed = c
 
     def register_modifier_hooks(self):
         @Hooks("modifier-activated")
