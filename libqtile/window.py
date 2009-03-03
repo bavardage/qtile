@@ -273,9 +273,6 @@ class _Window(command.CommandObject):
                 X.RevertToPointerRoot,
                 X.CurrentTime
             )
-            self.window.configure(
-                stack_mode = X.Above
-            )
             if warp:
                 self.window.warp_pointer(0, 0)
         manager.Hooks.call_hook("client-focus", self)
