@@ -272,6 +272,7 @@ class Floating(SubLayout):
 
     def configure(self, r, client):
         d = client.floatDimensions
+        d['stacking'] = window.STACKING_FLOATING
         self.place(client, **d)
 
 
