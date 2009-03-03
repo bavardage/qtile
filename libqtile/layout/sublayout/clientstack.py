@@ -47,7 +47,8 @@ class ClientStack(Layout):
                 if m.active:
                     m.modify(rect, c)
         #now actually place the windows
-        for c in self.clients:
+        for c in sorted(self.clients,
+                        key=lambda c:c.next_placement['stacking']):
             p = c.next_placement
             try:
                 c.place(p['x'], p['y'],
