@@ -326,20 +326,24 @@ class _Window(command.CommandObject):
             )
 
     def place(self, x, y, width, height, border, borderColor,
-              stack_mode = X.Above, sibling = X.NONE):
+              stack_mode = X.Above, sibling = None):
         """
             Places the window at the specified location with the given size.
         """
         self.x, self.y, self.width, self.height = x, y, width, height
-        self.window.configure(
+        attrs = dict(
             x=x,
             y=y,
             width=width,
             height=height,
             border_width=border,
-            sibling = sibling.window, #sibling is a client
             stack_mode = X.Above,
         )
+        if sibling:
+            attrs['sibling'] = sibling.window
+        self.window.configure(
+            **attrs
+            )
         if borderColor is not None:
             self.window.change_attributes(
                 border_pixel = borderColor
