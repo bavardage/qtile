@@ -58,7 +58,6 @@ class ClientStack(Layout):
                         p['bw'], p['bc'],
                         sibling=last_placed,
                         )
-                c.opacity = p['o']
                 if p['hi']:
                     c.hide()
                 else:

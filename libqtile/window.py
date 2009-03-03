@@ -41,7 +41,7 @@ class _Window(command.CommandObject):
             'x': -1, 'y': -1, 
             'w': -1, 'h': -1,
             'bw': -1, 'bc': -1, #border width, colour
-            'o': 1.0, 'hi': False, #opacity, hidden
+            'hi': False, #hidden
             'stacking': STACKING_NORMAL,
             }
         self.borderwidth = 0
