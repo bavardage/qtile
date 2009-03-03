@@ -1,4 +1,5 @@
 from Xlib import Xatom
+from ... import window
 
 class Rect:
     def __init__(self, x=0, y=0, w=0, h=0):
@@ -149,7 +150,8 @@ class SubLayout:
         """
         raise NotImplementedError, "this is %s" % self.__class__.__name__
 
-    def place(self, client, x, y, w, h):
+    def place(self, client, x, y, w, h,
+              stacking=window.STACKING_NORMAL):
         bc, opacity = ((self.focused_border, 1.0) \
                   if self.clientStack.focus_history \
                   and self.clientStack.focus_history[0] is client \
@@ -165,11 +167,15 @@ class SubLayout:
             'bc': bc,
             'o': opacity,
             'hi': False,
+            'stacking': stacking,
             }
         #copy key by key, since not all values are given e.g. hidden
         for k,v in next_placement.items():
             client.next_placement[k] = v
     
+    def set_stacking(self, stacking):
+        client.next_placement['stacking'] = stacking
+
     def hide_client(self, client):
         client.next_placement['hi'] = True
 

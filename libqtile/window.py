@@ -26,6 +26,11 @@ import Xlib.error
 import command, utils
 import manager
 
+STACKING_NORMAL = 50
+STACKING_BELOW = 10
+STACKING_FLOATING = 70
+STACKING_MAXIMISED = 90
+
 class _Window(command.CommandObject):
     def __init__(self, window, qtile):
         self.window, self.qtile = window, qtile
@@ -37,6 +42,7 @@ class _Window(command.CommandObject):
             'w': -1, 'h': -1,
             'bw': -1, 'bc': -1, #border width, colour
             'o': 1.0, 'hi': False, #opacity, hidden
+            'stacking': STACKING_NORMAL,
             }
         self.borderwidth = 0
         self.name = "<no name>"
