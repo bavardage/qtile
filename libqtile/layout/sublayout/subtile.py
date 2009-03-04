@@ -43,6 +43,8 @@ class SubTile(SubLayout):
                                              autohide=False
                                              )
                                )
+        self.sublayout_names = {'masters': self.sublayouts[0],
+                                'slaves': self.sublayouts[1]}
                    
     def filter(self, client):
         return True #TAKE THEM ALL

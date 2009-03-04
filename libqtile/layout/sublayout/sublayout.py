@@ -52,6 +52,7 @@ class SubLayout:
         self.theme = self.clientStack.theme
         self.clients = []
         self.sublayouts = []
+        self.sublayout_names = {}
         self.parent = parent
         self.autohide = autohide
         self.windows = []
@@ -232,6 +233,10 @@ class TopLevelSubLayout(SubLayout):
                                          **args
                                          )
                                )
+        self.sublayout_names = {'minimised': self.sublayouts[0],
+                                'floating': self.sublayouts[1],
+                                'main': self.sublayouts[2],
+                                }
 
 
 class VerticalStack(SubLayout):
