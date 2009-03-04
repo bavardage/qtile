@@ -3,11 +3,9 @@ from sublayout import VerticalStack, SubLayout, Rect
 
 
 class SubTile(SubLayout):
-    arrangements = ["left", "right"]
-    def __init__(self, clientStack, parent=None, autohide=True, master_windows=1, ratio=0.618, arrangement="left", expand=True):
+    def __init__(self, clientStack, parent=None, autohide=True, master_windows=1, ratio=0.618, expand=True):
         self.master_windows = master_windows
         self.ratio = ratio
-        self.arrangement = (arrangement if arrangement in self.arrangements else self.arrangements[0])
         self.expand = expand
         SubLayout.__init__(self, clientStack, parent, autohide)
 
@@ -27,10 +25,7 @@ class SubTile(SubLayout):
                 if self.autohide and len(windows) == 0:
                     return (Rect(), r)
                 else:
-                    if self.parent.arrangement == "left":
-                        rmaster, rslave = r.split_vertical(ratio=self.parent.ratio)
-                    else:
-                        rslave, rmaster = r.split_vertical(ratio=(1-self.parent.ratio))
+                    rmaster, rslave = r.split_vertical(ratio=self.parent.ratio)
                     return (rslave, rmaster)
             
         self.sublayouts.append(SlaveWindows(self.clientStack,
@@ -70,12 +65,4 @@ class SubTile(SubLayout):
             if self.master_windows < 1:
                 self.master_windows = 1 #don't let it drop below one - not set up to cope with this yet
             self.clientStack.group.layoutAll()
-        elif command == 'nextarrangement':
-            self.arrangement = self.arrangements[(self.arrangements.index(self.arrangement) + 1) % len(self.arrangements)]
-            self.clientStack.group.layoutAll()
         SubLayout.command(self, mask, command, *args, **kwargs)
-        
-            
-        
-        
-                     
