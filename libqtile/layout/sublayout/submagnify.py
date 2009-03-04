@@ -32,6 +32,9 @@ class SubMagnify(SubLayout):
                                          parent=self,
                                          )
                                )
+        self.sublayout_names = {'magnified': self.sublayouts[0],
+                                'stack': self.sublayouts[1],
+                                }
     
     def filter(self, client):
         return True
