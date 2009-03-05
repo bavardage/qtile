@@ -137,7 +137,7 @@ class _CommandTree(object):
 
 class _TLayout(_CommandTree):
     name = "layout"
-    _contains = ["group", "window", "screen", "modifiers"]
+    _contains = ["group", "window", "screen", "modifiers", "sublayouts"]
 
 
 class _TWidget(_CommandTree):
@@ -168,6 +168,14 @@ class _TModifiers(_CommandTree):
     name = "modifiers"
     _contains = []
 
+class _TSublayouts(_CommandTree):
+    name = "sublayouts"
+    _contains = ["sl"]
+
+class _TSublayout(_CommandTree):
+    name = "sl"
+    _contains = ["sl"]
+
 
 _TreeMap = {
     "layout":   _TLayout,
@@ -177,6 +185,8 @@ _TreeMap = {
     "screen":   _TScreen,
     "group":    _TGroup,
     "modifiers": _TModifiers,
+    "sublayouts": _TSublayouts,
+    "sl":         _TSublayout,
 }
 
 
