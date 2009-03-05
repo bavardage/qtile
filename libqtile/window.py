@@ -42,7 +42,6 @@ class _Window(command.CommandObject):
             'w': -1, 'h': -1,
             'bw': -1, 'bc': -1, #border width, colour
             'hi': False, #hidden
-            'stacking': STACKING_NORMAL,
             }
         self.borderwidth = 0
         self.name = "<no name>"
@@ -243,25 +242,18 @@ class _Window(command.CommandObject):
             event_mask=self._windowMask
         )
 
-    def place(self, x, y, width, height, border, borderColor,
-              stack_mode = X.Above, sibling = None):
+    def place(self, x, y, width, height, border, borderColor):
         """
             Places the window at the specified location with the given size.
         """
         self.x, self.y, self.width, self.height = x, y, width, height
-        attrs = dict(
+        self.window.configure(
             x=x,
             y=y,
             width=width,
             height=height,
             border_width=border,
-            stack_mode = X.Above,
         )
-        if sibling:
-            attrs['sibling'] = sibling.window
-        self.window.configure(
-            **attrs
-            )
         if borderColor is not None:
             self.window.change_attributes(
                 border_pixel = borderColor

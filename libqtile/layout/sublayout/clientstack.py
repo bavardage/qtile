@@ -48,15 +48,12 @@ class ClientStack(Layout):
                 if m.active:
                     m.modify(rect, c)
         #now actually place the windows
-        last_placed = None
-        for c in sorted(self.clients,
-                        key=lambda c:c.next_placement['stacking']):
+        for c in self.clients:
             p = c.next_placement
             try:
                 c.place(p['x'], p['y'],
                         p['w'], p['h'],
                         p['bw'], p['bc'],
-                        sibling=last_placed,
                         )
                 if p['hi']:
                     c.hide()
@@ -65,7 +62,6 @@ class ClientStack(Layout):
             except:
                 print "Something went wrong"
                 print "Window placement errored"
-            last_placed = c
 
     def register_modifier_hooks(self):
         @Hooks("modifier-activated")
