@@ -48,21 +48,12 @@ class SubTile(SubLayout):
         #        rectangle I want           rectangle left = NOTHING!!
         return (rectangle, Rect())
 
-    def command(self, mask, command, *args, **kwargs):
-        if command == 'ratio':
-            ratio = self.command_get_arg(args, kwargs, 'ratio', self.ratio)
-            self.ratio = ratio
-            self.clientStack.group.layoutAll()
-        elif command == 'incratio':
-            incr = self.command_get_arg(args, kwargs, 'incr', 0.1)
-            self.ratio += incr
-            if self.ratio < 0: self.ratio = 0
-            if self.ratio > 1: self.ratio = 1.0
-            self.clientStack.group.layoutAll()
-        elif command == 'incnmaster':
-            incr = self.command_get_arg(args, kwargs, 'incr', 1)
-            self.master_windows += incr
-            if self.master_windows < 1:
-                self.master_windows = 1 #don't let it drop below one - not set up to cope with this yet
-            self.clientStack.group.layoutAll()
-        SubLayout.command(self, mask, command, *args, **kwargs)
+    def cmd_inc_ratio(self, inc):
+        self.ratio += inc
+        if self.ratio < 0: self.ratio = 0.0
+        if self.ratio > 1: self.ratio = 1.0
+        self.clientStack.group.layoutAll()
+
+    def cmd_inc_nmaster(self, inc=1):
+        self.master_windows += inc
+        self.clientStack.group.layoutAll()

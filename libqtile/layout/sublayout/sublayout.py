@@ -1,5 +1,5 @@
 from Xlib import Xatom
-from ... import window
+from ... import window, command
 
 class Rect:
     def __init__(self, x=0, y=0, w=0, h=0):
@@ -43,7 +43,7 @@ class Rect:
         return "(%s, %s, %s, %s)" % (self.x, self.y, self.w, self.h)
 
 
-class SubLayout:
+class SubLayout(command.CommandObject):
     def __init__(self, clientStack, parent=None, autohide=True):
         """
            autohide - does it hide itself if there are no clients
@@ -179,40 +179,21 @@ class SubLayout:
     def hide_client(self, client):
         client.next_placement['hi'] = True
 
-    def command_get_arg(self, args, kwargs, name, default):
-        if name in kwargs:
-            return kwargs['name']
-        elif args:
-            if name < len(args):
-                return args[name]
-            else:
-                return args[0]
-        else:
-            return default
-        
+############
+# Commands #
+############
+    def _items(self, name):
+        if name == 'sl':
+            return True, self.sublayout_names.keys()
+    
+    def _select(self, name, sel):
+        if name == 'sl':
+            return self.sublayout_names[sel]
 
-    def command(self, mask, command, *args, **kwargs):
-        def split_command(command):
-            parts = command.split('_')
-            if len(parts) > 1:
-                mask = parts[0]
-                com = '_'.join(parts[1:])
-            else:
-                mask = '*'
-                com = '_'.join(parts)
-            return (mask, com)
-            
-        for sl in self.sublayouts:
-            if mask == '*':
-                sl.command(mask, command, *args, **kwargs)
-            elif mask == '?':
-                ma, com = split_command(command)
-                self.command(ma, com, *args, **kwargs)
-            elif mask == sl.__class__.__name__:
-                ma, com = split_command(command)
-                self.comand(ma, com, *args, **kwargs)
-            else:
-                print >> sys.stderr, "command ('%s' '%s') not passed on" % (mask, command)
+    def cmd_info(self):
+        return dict(
+            name=self.__class__.__name__,
+            )
 
 class TopLevelSubLayout(SubLayout):
     '''

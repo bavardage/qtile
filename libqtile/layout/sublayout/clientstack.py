@@ -188,12 +188,19 @@ class ClientStack(Layout):
     def _items(self, name):
         if name == "modifiers":
             return True, self.layout_modifiers.keys()
+        elif name == "sublayouts":
+            return True, range(len(self.sublayouts)) + ['current']
         else:
             return Layout._items(self, name)
 
     def _select(self, name, sel):
         if name == "modifiers":
             return self.layout_modifiers[sel]
+        elif name == "sublayouts":
+            if sel == 'current':
+                return self.sublayouts[self.current_sublayout]
+            else:
+                return self.sublayouts[sel]
         else:
             return Layout._select(self, name, sel)
 
