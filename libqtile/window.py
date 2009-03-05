@@ -79,9 +79,15 @@ class _Window(command.CommandObject):
                 self.states.insert(0, state)
         else:
             if self.states[0] == state:
+<<<<<<< HEAD:libqtile/window.py
                 self.states = self.states[1:]
             if not self.states:
                 self.states = ["normal"]
+=======
+                self.states = states[1:]
+            if not states:
+                states = ["normal"]
+>>>>>>> Create the notion of window states and window types:libqtile/window.py
         if oldstate != self.states[0]:
             manager.Hooks.call_hook("client-state-changed", state, self)
     def getState(self, state):
@@ -101,6 +107,7 @@ class _Window(command.CommandObject):
     def setFloating(self, val):
         self.setState("floating", val)
     floating = property(getFloating, setFloating)
+<<<<<<< HEAD:libqtile/window.py
 
     def getMaximised(self):
         return self.getState("maximised")
@@ -113,6 +120,8 @@ class _Window(command.CommandObject):
     def setFullscreen(self, val):
         self.setState("fullscreen", val)
     fullscreen = property(getFullscreen, setFullscreen)
+=======
+>>>>>>> Create the notion of window states and window types:libqtile/window.py
 
     def updateName(self):
         try:
@@ -136,11 +145,15 @@ class _Window(command.CommandObject):
     window_type = property(getWindowType, setWindowType)
 
     def updateWindowType(self):
+<<<<<<< HEAD:libqtile/window.py
         '''
         http://standards.freedesktop.org/wm-spec/wm-spec-latest.html#id2551529
         Also a type "pseudo-normal" is used to indicicate a window that wants 
         to be treated as if it were normal, but isn't actually.
         '''
+=======
+        '''http://standards.freedesktop.org/wm-spec/wm-spec-latest.html#id2551529'''
+>>>>>>> Create the notion of window states and window types:libqtile/window.py
         types = {
             '_NET_WM_WINDOW_TYPE_DESKTOP': "desktop",
             '_NET_WM_WINDOW_TYPE_DOCK': "dock",
