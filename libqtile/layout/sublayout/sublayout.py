@@ -150,8 +150,7 @@ class SubLayout(command.CommandObject):
         """
         raise NotImplementedError, "this is %s" % self.__class__.__name__
 
-    def place(self, client, x, y, w, h,
-              stacking=window.STACKING_NORMAL):
+    def place(self, client, x, y, w, h):
         bc = (self.focused_border \
                   if self.clientStack.focus_history \
                   and self.clientStack.focus_history[0] is client \
@@ -166,15 +165,11 @@ class SubLayout(command.CommandObject):
             'bw': self.border_width,
             'bc': bc,
             'hi': False,
-            'stacking': stacking,
             }
         #copy key by key, since not all values are given e.g. hidden
         for k,v in next_placement.items():
             client.next_placement[k] = v
     
-    def set_stacking(self, stacking):
-        client.next_placement['stacking'] = stacking
-
     def hide_client(self, client):
         client.next_placement['hi'] = True
 
@@ -256,7 +251,6 @@ class Floating(SubLayout):
 
     def configure(self, r, client):
         d = client.floatDimensions
-        d['stacking'] = window.STACKING_FLOATING
         self.place(client, **d)
 
 

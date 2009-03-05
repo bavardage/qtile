@@ -43,7 +43,6 @@ class _Window(command.CommandObject):
             'w': -1, 'h': -1,
             'bw': -1, 'bc': -1, #border width, colour
             'hi': False, #hidden
-            'stacking': STACKING_NORMAL,
             }
         self.borderwidth = 0
         self.name = "<no name>"
@@ -101,7 +100,6 @@ class _Window(command.CommandObject):
     def setFloating(self, val):
         self.setState("floating", val)
     floating = property(getFloating, setFloating)
-<<<<<<< HEAD:libqtile/window.py
 
     def getMaximised(self):
         return self.getState("maximised")
@@ -114,8 +112,6 @@ class _Window(command.CommandObject):
     def setFullscreen(self, val):
         self.setState("fullscreen", val)
     fullscreen = property(getFullscreen, setFullscreen)
-=======
->>>>>>> Create the notion of window states and window types:libqtile/window.py
 
     def updateName(self):
         try:
@@ -327,6 +323,7 @@ class _Window(command.CommandObject):
             event_mask=self._windowMask
         )
 
+<<<<<<< HEAD:libqtile/window.py
     def addMask(self, mask):
         self.window.change_attributes(
             event_mask=self._windowMask|mask
@@ -334,23 +331,20 @@ class _Window(command.CommandObject):
 
     def place(self, x, y, width, height, border, borderColor,
               stack_mode = X.Above, sibling = None):
+=======
+    def place(self, x, y, width, height, border, borderColor):
+>>>>>>> Don't stack windows using the newPos attribute - use something else coming soon:libqtile/window.py
         """
             Places the window at the specified location with the given size.
         """
         self.x, self.y, self.width, self.height = x, y, width, height
-        attrs = dict(
+        self.window.configure(
             x=x,
             y=y,
             width=width,
             height=height,
             border_width=border,
-            stack_mode = X.Above,
         )
-        if sibling:
-            attrs['sibling'] = sibling.window
-        self.window.configure(
-            **attrs
-            )
         if borderColor is not None:
             self.window.change_attributes(
                 border_pixel = borderColor
