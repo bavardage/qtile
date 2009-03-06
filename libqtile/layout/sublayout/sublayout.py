@@ -200,6 +200,10 @@ class TopLevelSubLayout(SubLayout):
                                          parent=self
                                          )
                                )
+        self.sublayouts.append(Maximised(clientStack,
+                                         parent=self
+                                         )
+                               )
         self.sublayouts.append(Floating(clientStack,
                                         parent=self
                                         )
@@ -263,3 +267,19 @@ class Minimised(SubLayout):
     
     def configure(self, r, client):
         self.hide_client(client)
+
+class Maximised(SubLayout):
+    def filter(self, client):
+        return client.maximised
+    
+    def request_rectangle(self, r, clients):
+        return (r, r) #yeah sure let the others have their way...
+            #UNDERNEATH US. muahahaha
+    
+    def configure(self, r, client):
+        self.place(client,
+                   r.x,
+                   r.y,
+                   r.w,
+                   r.h
+                   )
