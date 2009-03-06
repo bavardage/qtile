@@ -78,9 +78,9 @@ class _Window(command.CommandObject):
                 self.states.insert(0, state)
         else:
             if self.states[0] == state:
-                self.states = states[1:]
-            if not states:
-                states = ["normal"]
+                self.states = self.states[1:]
+            if not self.states:
+                self.states = ["normal"]
         if oldstate != self.states[0]:
             manager.Hooks.call_hook("client-state-changed", state, self)
     def getState(self, state):
