@@ -4,6 +4,33 @@ from ... import command, utils, window
 from ...manager import Hooks
 from Xlib import X
 
+class Layers:
+    BOTTOM = 0
+    DESKTOP = 10
+    BELOW = 20
+    NORMAL = 30
+    ABOVE = 40
+    FLOAT = 50
+    MAXIMISE = 60
+    FULLSCREEN = 70
+
+types_states_to_layers = [
+    #states first
+    (lambda c:c.floating, Layers.FLOAT),
+#    (lambda c:c.maximised, Layers.MAXIMISE), NOT IMPLEMENTED YET
+    #then types
+    (lambda c:c.window_type == "normal", Layers.NORMAL),
+    (lambda c:c.window_type == "desktop", Layers.DESKTOP),
+    (lambda c:c.window_type == "dock", Layers.ABOVE),
+    (lambda c: True, Layers.NORMAL), #fallback
+]
+
+def get_layer(tstl, client):
+    for test, layer in tstl:
+        if test(client):
+            return layer
+    return Layers.NORMAL
+
 class ClientStack(Layout):
     name="tile"
     ADD_TO_TOP, ADD_TO_BOTTOM, ADD_TO_NEXT, ADD_TO_PREVIOUS = \
@@ -22,6 +49,7 @@ class ClientStack(Layout):
         self.focus_history_length = focus_history_length
         self.mouse_warp = mouse_warp
         # initialise other values #
+        self.need_restack = True
         self.clients = []
         self.focus_history = []
         self.normal_border, self.active_border, self.focused_border = \
@@ -31,6 +59,26 @@ class ClientStack(Layout):
         self.SubLayouts = SubLayouts
         self.layout_modifiers = {}
         self.Modifiers = (Modifiers if Modifiers else [])
+
+    def restack(self):
+        print "restacking..."
+        self.need_restack = False
+        tstl = types_states_to_layers
+        layers = []
+        for c in self.clients:
+            layer = get_layer(tstl, c)
+            if c is self.focused:
+                layer += 1
+            layers.append((layer, c))
+        layers.sort()
+        layers.reverse()
+        last = X.NONE
+        for l,client in layers:
+            client.window.configure(
+                sibling = last,
+                stack_mode = X.Below,
+                )
+            last = client.window
 
     def layout(self, windows):
         sl = self.sublayouts[self.current_sublayout]
@@ -42,6 +90,9 @@ class ClientStack(Layout):
                     )
         # set the windows' next_placement
         sl.layout(rect, self.clients)
+        #restack if needs be
+        if self.need_restack:
+            self.restack()
         # modify the placement
         for c in self.clients:
             for name,m in self.layout_modifiers.items():
@@ -62,13 +113,19 @@ class ClientStack(Layout):
             except:
                 print "Something went wrong"
                 print "Window placement errored"
-
-    def register_modifier_hooks(self):
+      
+    def register_hooks(self):
         @Hooks("modifier-activated")
         @Hooks("modifier-disactivated")
         @Hooks("modifier-toggled")
         def modifiers_changed(datadict, qtile, modifier):
             self.group.layoutAll()
+        @Hooks("client-state-changed")
+        @Hooks("client-type-changed")
+        @Hooks("client-focus")
+        def restack_hook(datadict, qtile, *args):
+            self.need_restack = True
+
 
     def configure(self, window):
         # Oh dear, this shouldn't be happening, oh dear what can the matter be, oh dear help help help
@@ -95,7 +152,7 @@ class ClientStack(Layout):
         for Modifier, kwargs in self.Modifiers:
             m = Modifier(**kwargs)
             c.layout_modifiers[m.name] = m
-        c.register_modifier_hooks()
+        c.register_hooks()
         c.current_sublayout = 0
         return c
 
