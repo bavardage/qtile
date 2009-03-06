@@ -17,7 +17,8 @@ class Layers:
 types_states_to_layers = [
     #states first
     (lambda c:c.floating, Layers.FLOAT),
-#    (lambda c:c.maximised, Layers.MAXIMISE), NOT IMPLEMENTED YET
+    (lambda c:c.maximised, Layers.MAXIMISE),
+    (lambda c:c.fullscreen, Layers.FULLSCREEN),
     #then types
     (lambda c:c.window_type == "normal", Layers.NORMAL),
     (lambda c:c.window_type == "desktop", Layers.DESKTOP),
