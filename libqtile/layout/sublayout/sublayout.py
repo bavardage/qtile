@@ -197,6 +197,10 @@ class TopLevelSubLayout(SubLayout):
     def __init__(self, sublayout_data, clientStack):
         WrappedSubLayout, args = sublayout_data
         SubLayout.__init__(self, clientStack)
+        self.sublayouts.append(SpecialWindowTypes(clientStack,
+                                                  parent=self
+                                                  )
+                               )
         self.sublayouts.append(Minimised(clientStack,
                                          parent=self
                                          )
@@ -284,3 +288,7 @@ class Maximised(SubLayout):
                    r.w,
                    r.h
                    )
+
+class SpecialWindowTypes(Floating):
+    def filter(self, client):
+        return client.window_type != "normal"
