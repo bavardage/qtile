@@ -10,9 +10,10 @@ class Layers:
     BELOW = 20
     NORMAL = 30
     ABOVE = 40
-    FLOAT = 50
-    MAXIMISE = 60
-    FULLSCREEN = 70
+    DIALOG = 50
+    FLOAT = 60
+    MAXIMISE = 70
+    FULLSCREEN = 80
 
 types_states_to_layers = [
     #states first
@@ -21,6 +22,7 @@ types_states_to_layers = [
     (lambda c:c.fullscreen, Layers.FULLSCREEN),
     #then types
     (lambda c:c.window_type == "normal", Layers.NORMAL),
+    (lambda c:c.window_type == "dialog", Layers.DIALOG),
     (lambda c:c.window_type == "desktop", Layers.DESKTOP),
     (lambda c:c.window_type == "dock", Layers.ABOVE),
     (lambda c: True, Layers.NORMAL), #fallback
