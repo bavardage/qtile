@@ -37,24 +37,19 @@ class SystemTray(Widget):
         self.qtile.internalMap[self.window] = self
 
     def handle_ClientMessage(self, e):
-        print "HANDLE CLIENTMESSAGE :o"
-        print e
         data = e.data[1][1] # opcode
         task = e.data[1][2] # taskid
         if e.client_type == self._OPCODE and data == 0:
-            print "adding icon"
             icon_window = self.qtile.display.create_resource_object("window", task)
-#            icon_window.reparent(self.window.id, 0, 0)
+            icon_window.reparent(self.bar.window.window.id, 0, 0)
             icon_window.change_attributes(
                 event_mask=(X.ExposureMask|X.StructureNotifyMask)
                 )
             self.icons[icon_window.id] = icon_window
             self.qtile.internalMap[icon_window] = self
-            print "the icon is", icon_window
             self.bar.update_widget(self)
 
     def handle_ConfigureNotify(self, e):
-        print "CONFIGURE NOTIF|Y OMG"
         if e.window.id in self.icons:
             self.icons[e.window.id].configure(
                 width=self.height, height=self.height
@@ -62,7 +57,6 @@ class SystemTray(Widget):
 
     def handle_DestroyNotify(self, e):
         """ Remove the icon from the systray """
-        print "DESTROY NOTIFY OMG"
         destroyed_id = e.window.id
         if destroyed_id in self.icons:
             del self.icons[destroyed_id]
@@ -80,20 +74,17 @@ class SystemTray(Widget):
     def draw(self, canvas):
         width, height = canvas.size
         self.height = height #for configurenotify
-        y = self.bar.window.y
         pos = \
-            self.bar.widgetData[self]['offset'] + \
-            canvas.size[0] + \
-            self.bar.window.x
-        print "offset is", pos
+            self.bar.widgetData[self]['offset'] + width
+        
+        #now place icon windows, from the 'right'
         for icoid, ico in self.icons.items():
             x = pos-height
             ico.configure(onerror=None, 
-                          x=x, y=y, 
+                          x=x, y=0, 
                           width=height,
                           height=height
                           )
-            print "mapping"
             ico.map()
             pos -= height
         return canvas
