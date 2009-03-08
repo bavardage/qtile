@@ -193,20 +193,44 @@ class Bar(CommandObject):
         self.widgetData[w]['image'] = None
         self.draw()
 
+    def coords_window_to_bar(self, x, y, w=None, h=None):
+        if self.edge == self.LEFT:
+            x,y = (self.width - y), x
+        elif self.edge == self.RIGHT:
+            x,y = y, (self.height - x)
+        result = [x,y]
+        if w and h:
+            if self.edge in (self.LEFT, self.RIGHT):
+                w,h = h,w
+            result.extend([w,h])
+        return result
+
+    def coords_bar_to_window(self, x, y, w=None, h=None):
+        if self.edge == self.LEFT:
+            x,y = y, (self.width - x)
+            if w:
+                y -= w
+        elif self.edge == self.RIGHT:
+            x,y = (self.height - y), x
+            if h:
+                x -= h
+        result = [x,y]
+        if w and h:
+            if self.edge in (self.LEFT, self.RIGHT):
+                w,h = h,w
+            result.extend([w,h])
+        return result
+
     def handle_Expose(self, e):
         self.draw()
         
     def handle_ButtonPress(self, e):
-        x, y = e.event_x, e.event_y
-        if self.edge == self.LEFT:
-            x,y = (self.width - y), x
-        elif self.edge == self.RIGHT:
-            x, y = y, (self.height - x)
+        x,y = e.event_x, e.event_y
+        x,y = self.coords_window_to_bar(x,y)
         for w, d in self.widgetData.items():
             if d['offset'] <= x < d['offset'] + d['width']:
                 w.click(x - d['offset'], y)
                 
-
     def handle_KeyPress(self, e):
         if not self.keyboard_grabbers:
             print "no grabbing atm"
