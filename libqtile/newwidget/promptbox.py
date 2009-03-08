@@ -1,15 +1,49 @@
+import os
+
 from textbox import TextBox
 from base import Widget
 from ..manager import Hooks
 
 from Xlib import XK
 
+class Completer:
+    def complete(text):
+        ''' returns a generator '''
+        raise NotImplementedError
+    
+class PathCompleter(Completer):
+    def __init__(self):
+        path = os.path.expandvars('$PATH').split(':')
+        self.completions = set()
+        for directory in path:
+            try:
+                self.completions.update(
+                    os.listdir(directory)
+                    )
+            except:
+                pass
+        self.completions = list(self.completions)
+        self.completions.sort()
+        
+    def complete(self, text):
+        if not self.completions:
+            raise StopIteration
+        suggested_once = True
+        while suggested_once: #keep suggesting
+            suggested_once = False
+            for comp in self.completions:
+                if comp[:len(text)] == text:
+                    yield comp
+                    suggested_once = True
+
 class PromptBox(TextBox):
-    def __init__(self, name, prompt, width, align=Widget.ALIGN_LEFT):
+    def __init__(self, name, prompt, width, align=Widget.ALIGN_LEFT, completer=None):
         TextBox.__init__(self, name, prompt, width, align)
         self.prompt = prompt
         self.command_text = ''
         self.cursor_position = 0
+        self.completer = (completer if completer else PathCompleter())
+        self.completer_generator = None
 
     def _configure(self, bar, theme):
         TextBox._configure(self, bar, theme)
@@ -27,6 +61,7 @@ class PromptBox(TextBox):
     def abort(self):
         self.command_text = ""
         self.cursor_position = 0
+        self.stop_completion()
         self.ungrab_keyboard()
         self.update()
 
@@ -47,6 +82,21 @@ class PromptBox(TextBox):
                     self.cursor_position %= len(self.command_text)
                 else:
                     self.cursor_position = 0
+
+    def do_completion(self):
+        if not self.completer_generator:
+            self.completer_generator = \
+                self.completer.complete(self.command_text)
+        try:
+            result = self.completer_generator.next()
+            self.command_text = result
+            self.move_cursor('end')
+        except:
+            self.stop_completion()
+            return
+
+    def stop_completion(self):
+        self.completer_generator = None
             
     def handle_KeyPress(self, e):
         keysym = self.bar.qtile.display.keycode_to_keysym(e.detail, e.state)
@@ -55,6 +105,10 @@ class PromptBox(TextBox):
         print "keycode", e.detail
         print "keystring", keystring
         print "state", e.state
+        if keysym != XK.XK_Tab:
+            self.stop_completion()
+        if keysym == XK.XK_Tab:
+            self.do_completion()
         if keysym == XK.XK_Escape:
             self.abort()
         elif keysym == XK.XK_Return:
