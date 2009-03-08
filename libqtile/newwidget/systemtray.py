@@ -79,11 +79,15 @@ class SystemTray(Widget):
         
         #now place icon windows, from the 'right'
         for icoid, ico in self.icons.items():
-            x = pos-height
+            x = pos - height
+            y = 0
+            w = height
+            h = height
+            x,y,w,h = self.bar.coords_bar_to_window(x,y,w,h)
             ico.configure(onerror=None, 
-                          x=x, y=0, 
-                          width=height,
-                          height=height
+                          x=x, y=y, 
+                          width=w,
+                          height=h,
                           )
             ico.map()
             pos -= height
