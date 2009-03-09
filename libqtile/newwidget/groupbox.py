@@ -12,10 +12,10 @@ class GroupBox(Widget):
         self.groups = []
         self.groupnamewidths = {} #dict of text and widths
 
-    def _configure(self, bar, theme):
-        Widget._configure(self, bar, theme)
+    def _configure(self, wibox, theme):
+        Widget._configure(self, wibox, theme)
         
-        self.qtile = self.bar.qtile
+        self.qtile = self.wibox.qtile
 
         self.font = ImageFont.truetype(theme['groupbox_ttffont'],
                                        theme['groupbox_ttffontsize'],
@@ -75,5 +75,5 @@ class GroupBox(Widget):
         @Hooks("client-killed")
         @Hooks("client-urgent-hint-changed")
         def update_hook(datadict, qtile, *args):
-            self.bar.update_widget(self)
+            self.wibox.update_widget(self)
         

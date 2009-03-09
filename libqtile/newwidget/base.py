@@ -7,11 +7,11 @@ class Widget(command.CommandObject):
         self.name = name
         self.width_req = width
         self.align = align
-        self.bar = None
+        self.wibox = None
         self.theme = None
 
-    def _configure(self, bar, theme):
-        self.bar = bar
+    def _configure(self, wibox, theme):
+        self.wibox = wibox
         self.theme = theme
     
     def draw(self, canvas):
@@ -20,15 +20,16 @@ class Widget(command.CommandObject):
     def click(self, x, y):
         pass
 
-    #################
-    # cmd_ stuff, not really sure of this
+    ############
+    # Commands #
+    ############
     def _items(self, name):
-        if name == "bar":
-            return self.bar
+        if name == "wibox":
+            return self.wibox
 
     def _select(self, name, sel):
-        if name == "bar":
-            return self.bar
+        if name == "wibox":
+            return self.wibox
 
     def cmd_info(self):
         return self.info()

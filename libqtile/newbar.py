@@ -9,34 +9,49 @@ from Xlib import X
 
 '''
 Note:
-Although the bar could be rotated, we code as if the bar were horizontal:
+Although the wibox can be rotated, we code as if it were horizontal:
 width is horizontal dimension,
 height is vertical dimension,
 x is horizontal displacement,
 y is vertical displacement
 '''
 
+class WidgetData:
+    width = 0
+    xoffset = 0
+    yoffset = 0
+    image = None
+    def __init__(self, widget):
+        self.widget = widget
+        
 
-class Bar(CommandObject):
-
-    new_bar = True
-
-    WIDTH_SCREEN = 1
-    TOP, BOTTOM, RIGHT, LEFT = 1,2,3,4
-    def __init__(self, widgets, edge,
-                 width=WIDTH_SCREEN, height=20):
+class Wibox(CommandObject):
+    AUTO_HEIGHT = 20
+    dimensions = [
+        "expand", #expand to fit all widgets' initial width request
+        ]
+    placements = ["top", "bottom", "right", "left", "floating"]
+    placement_align = ["left", "center", "right"]
+    rotation = [0, 90, 180, 270, "auto"]
+    def __init__(self, name, widgets, placement, 
+                 x=0, y=0, width="expand", height=AUTO_HEIGHT,
+                 placement_align = "center",
+                 rotation = "auto"):
+        #TODO: add error checking for parameters
+        self.name = name
         self.widgets = widgets
         self.widgetData = {}
         for w in self.widgets:
-            self.widgetData[w] = {}
-            self.widgetData[w]['width'] = 0
-            self.widgetData[w]['offset'] = 0
-            self.widgetData[w]['image'] = None
-
-        self.edge = edge
-        self.width = width
-        self.height = height
+            self.widgetData[w] = WidgetData(w)
+        self.placement = placement
+        self.placement_align = placement_align
+        self.rotation = rotation
         
+        self.x = x
+        self.y = y
+        self.w = width
+        self.h = height
+
         self.qtile = None
         self.screen = None
         self.window = None
@@ -45,79 +60,143 @@ class Bar(CommandObject):
 
         self.need_arrange = True
         self.baseimage = None
-        
+
         self.keyboard_grabbers = []
-        
+
     def _configure(self, qtile, screen, theme):
         self.qtile = qtile
         self.screen = screen
         self.theme = theme
 
-        edge = self.edge
-        
-        if self.width == self.WIDTH_SCREEN:
-            if edge in (self.TOP, self.BOTTOM): #is it horizontal
-                self.width = self.screen.width
-            else:
-                self.width = self.screen.dheight
-
-        if edge in (self.TOP, self.BOTTOM): #is it horizontal
-            self.x = (self.screen.width - self.width)/2 #assume center
-            #TODO: make the bars alignable
-        else:
-            self.x = (self.screen.height - self.width)/2 #assume center
-       
-        if edge in (self.TOP, self.LEFT):
-            self.y = 0
-        elif edge == self.BOTTOM:
-            self.y = self.screen.height - self.height
-        elif edge == self.RIGHT:
-            self.y = self.screen.width - self.height
-        
-        self._init_window()
-
         for w in self.widgets:
             self.qtile.registerWidget(w)
-            w._configure(self, theme) #all that they need to know
+            w._configure(self, theme)
 
-    
-    def _init_baseimage(self):
-        self.baseimage = Image.new("RGBA", 
-                               (self.width, self.height), 
-                               self.theme["bar_bg_normal"]
-                               )
+        self._init_rotation()
+
+        self._init_size()
         
-        Hooks.call_hook("bar-draw", self.baseimage)
+        self._init_position()
+
+        self._init_margin()
+
+        self._init_window()
+
+    def _init_size(self):
+        if self.w == "expand":
+            self.w = sum(
+                [w.width_req for w in self.widgets]
+                )
+        if self.h == "expand":
+            self.h = self.AUTO_HEIGHT #TODO: add height request
+
+    def _init_position(self):
+        p = self.placement
+        pa = self.placement_align
+        #remember, we code as if we were always vertical
+        # only place when we shouldn't do this, is in place..
+        #TODO: add margins and stuff, and use dheight, dwidth or w/e
+        #TODO: position rotated floating things better
+        #TODO: allow x and y for bars... don't assume they are auto?
+        # should I? maybe not...
+        if p in ("right", "left"):
+            self.y = 0
+            if pa == "center":
+                self.x = (self.screen.height - self.w)/2
+            elif pa == "right":
+                self.x = (self.screen.height - self.w)
+            else: #left
+                self.x = 0
+        elif p == "top":
+            self.y = 0
+            if pa == "center":
+                self.x = (self.screen.width - self.w)/2
+            elif pa == "right":
+                self.x = (self.screen.width - self.w)
+            else:
+                self.x = 0
+        elif p == "bottom":
+            self.y = self.screen.height - self.h
+            if pa == "center":
+                self.x = (self.screen.width - self.w)/2
+            elif pa == "right":
+                self.x = (self.screen.width - self.w)
+            else:
+                self.x = 0
+        elif p == "floating":
+            pass          
+
+    def _init_margin(self):
+        if self.placement in ("left", "right", "top", "bottom"):
+            self.screen.increase_margin(self.placement, self.h)
+    
+    def _init_rotation(self):
+        if self.rotation != "auto":
+            return
+        p = self.placement            
+        rotations = {"top": 0,
+                     "bottom": 0,
+                     "left": 90,
+                     "right": 270,
+                     "floating": 0
+                     }
+        self.rotation = rotations[p]
 
     def _init_window(self):
         c = self.qtile.display.screen().default_colormap.alloc_named_color(
-            "black").pixel
-        if self.edge in (self.TOP, self.BOTTOM):
-            x,y,w,h = self.x, self.y, self.width, self.height
-        else:
-            x,y,w,h = self.y, self.x, self.height, self.width
+            "black"
+            ).pixel
+    
+        if self.placement in ("top", "bottom"):
+            x,y,w,h = self.x, self.y, self.w, self.h
+        elif self.placement == "right":
+            x = self.screen.width - self.y - self.h
+            y = self.x
+            w = self.h
+            h = self.w
+        elif self.placement == "left":
+            x = self.y
+            y = self.screen.height - self.x - self.w
+            w = self.h
+            h = self.w
+        elif self.placement == "floating":
+            if self.rotation in (0, 180):
+                x = self.x
+                y = self.y
+                w = self.w
+                h = self.h
+            elif self.rotation in (90, 270):
+                x = self.x
+                y = self.y
+                w,h = self.h, self.w
+        
         self.window = window.Internal.create(self.qtile,
                                              c,
                                              x, y, w, h,
                                              self.theme["bar_opacity"]
                                              )
-        self.window.name = "qtile-newbar"
+        self.window.name = "qtile-bar"
         self.window.handle_Expose = self.handle_Expose
         self.window.handle_ButtonPress = self.handle_ButtonPress
         self.window.handle_KeyPress = self.handle_KeyPress
         self.qtile.internalMap[self.window.window] = self.window
-        
+
         self.gc = self.window.window.create_gc()
+        self.window.addMask(X.KeyPressMask) #allow keygrabbing stuff
+        
+        self.window.unhide() #show
 
-        self.window.unhide()  
+    def _init_baseimage(self):
+        self.baseimage = Image.new("RGBA",
+                                   (self.w, self.h),
+                                   self.theme["bar_bg_normal"],
+                                   )
+        Hooks.call_hook("bar-draw", self.baseimage)
 
-        self.window.addMask(X.KeyPressMask)
-
-    
     def arrange_widgets(self):
-        width = self.width
+        width = self.w
         ledge, redge = 0, width
- 
+
         widgets = self.widgets
         lalign = [w for w in widgets \
                       if w.align == Widget.ALIGN_LEFT]
@@ -130,36 +209,38 @@ class Bar(CommandObject):
                 print "not enough room to fit %s" % w.name
                 break
             elif redge - ledge >= w.width_req:
-                self.widgetData[w]['width'] = w.width_req
-                self.widgetData[w]['offset'] = ledge
+                self.widgetData[w].width = w.width_req
+                self.widgetData[w].xoffset = ledge
             else:
-                self.widgetData[w]['width'] = redge - ledge
-                self.widgetData[w]['offset'] = ledge
-            ledge += self.widgetData[w]['width']
-
+                self.widgetData[w].width = redge - ledge
+                self.widgetData[w].xoffset = ledge
+            ledge += self.widgetData[w].width
+        
         for w in ralign:
             if redge - ledge <= 0:
                 print "not enough room to fit %s" % w.name
                 break
             elif redge - ledge >= w.width_req:
-                self.widgetData[w]['width'] = w.width_req
-                self.widgetData[w]['offset'] = redge - \
-                    self.widgetData[w]['width']
+                self.widgetData[w].width = width = w.width_req
+                self.widgetData[w].xoffset = redge - width
             else:
-                self.widgetData[w]['width'] = redge - ledge
-                self.widgetData[w]['offset'] = redge - \
-                    self.widgetData[w]['width']
-            redge -= self.widgetData[w]['width']
+                self.widgetData[w].width = width = redge - ledge
+                self.widgetData[w].xoffset = redge - width
+            redge -= self.widgetData[w].width
 
         self.need_arrange = False
 
+    def _screen_resize():
+        pass #TODO: handle this nicely
+
     def draw_widget(self, w):
         data = self.widgetData[w]
-        im = w.draw(Image.new("RGBA",
-                              (data['width'], self.height)
-                              ))
-        self.widgetData[w]['image'] = im
-            
+        im = w.draw(
+            Image.new("RGBA", #the canvas
+                      (data.width, self.h),
+                      )
+            )
+        self.widgetData[w].image = im
 
     def draw(self):
         if self.need_arrange:
@@ -168,112 +249,101 @@ class Bar(CommandObject):
             self._init_baseimage()
 
         self.image = self.baseimage.copy()
-        
-        for w, data in self.widgetData.items():    
-            if data['image'] is None:
+
+        for w, data in self.widgetData.items():
+            if data.image is None:
                 self.draw_widget(w)
-            im = data['image']
-            self.image.paste(im,
-                             (data['offset'], 0),
-                             im
+            self.image.paste(data.image,
+                             (data.xoffset, 0),
+                             data.image,
                              )
         rgbimage = self.image.convert("RGB")
+        rgbimage = rgbimage.rotate(self.rotation, expand=1)
 
-        if self.edge == self.LEFT:
-            rgbimage = rgbimage.rotate(90, expand=1)
-        elif self.edge == self.RIGHT:
-            rgbimage = rgbimage.rotate(-90, expand=1)
-        
         self.window.window.put_pil_image(self.gc,
                                          0, 0,
-                                         rgbimage
+                                         rgbimage,
                                          )
-
     def update_widget(self, w):
-        self.widgetData[w]['image'] = None
+        self.widgetData[w].image = None
         self.draw()
 
-    def coords_window_to_bar(self, x, y, w=None, h=None):
-        if self.edge == self.LEFT:
-            x,y = (self.width - y), x
-        elif self.edge == self.RIGHT:
-            x,y = y, (self.height - x)
-        result = [x,y]
-        if w and h:
-            if self.edge in (self.LEFT, self.RIGHT):
-                w,h = h,w
-            result.extend([w,h])
-        return result
-
-    def coords_bar_to_window(self, x, y, w=None, h=None):
-        if self.edge == self.LEFT:
-            x,y = y, (self.width - x)
-            if w:
-                y -= w
-        elif self.edge == self.RIGHT:
-            x,y = (self.height - y), x
-            if h:
-                x -= h
-        result = [x,y]
-        if w and h:
-            if self.edge in (self.LEFT, self.RIGHT):
-                w,h = h,w
-            result.extend([w,h])
-        return result
-
+    def coords_window_to_wibox(self, x,y,w,h):
+        if self.rotation == 0:
+            pass
+        elif self.rotation == 270:
+            x,y = y, (self.h - x - w)
+            w,h = h,w
+        elif self.rotation == 180:
+            x,y = (self.w - x - w), (self.h - y - h)
+        elif self.rotation == 90:
+            x,y = (self.w - y - h), x
+            w,h = h,w
+        return x,y,w,h
+    def coords_wibox_to_window(self, x,y,w,h):
+        if self.rotation == 0:
+            pass
+        elif self.rotation == 270:
+            x,y = (self.h - y - h), x
+            w,h = h,w
+        elif self.rotation == 180:
+            x,y = (self.w - x - w), (self.h - y - h)
+        elif self.rotation == 90:
+            x,y = y, (self.w - x - w)
+            w,h = h,w
+        return x,y,w,h
+        
     def handle_Expose(self, e):
         self.draw()
-        
     def handle_ButtonPress(self, e):
         x,y = e.event_x, e.event_y
-        x,y = self.coords_window_to_bar(x,y)
+        x,y = self.coords_window_to_wibox(x,y,0,0)[:2]
         for w, d in self.widgetData.items():
-            if d['offset'] <= x < d['offset'] + d['width']:
-                w.click(x - d['offset'], y)
-                
+            if d.xoffset <= x <= d.xoffset + d.width:
+                w.click(x - d.xoffset, y)
     def handle_KeyPress(self, e):
         if not self.keyboard_grabbers:
-            print "no grabbing atm"
             return
         else:
             self.keyboard_grabbers[-1].handle_KeyPress(e)
-
+    
     def grab_keyboard(self, widget):
-        self.keyboard_grabbers.append(widget)
-        if len(self.keyboard_grabbers) == 1:
-            self.window.window.grab_keyboard(0, X.GrabModeAsync, X.GrabModeAsync, X.CurrentTime)
+        need_grab = not self.keyboard_grabbers
+        
+        if widget in self.keyboard_grabbers:
+            self.keyboard_grabbers.remove(widget)
+            self.keyboard_grabbers.append(widget)
         else:
-            #it's already grabbed
-            return
+            self.keyboard_grabbers.append(widget)
 
+        if need_grab:
+            self.window.window.grab_keyboard(0,
+                                             X.GrabModeAsync,
+                                             X.GrabModeAsync,
+                                             X.CurrentTime
+                                             )
+        else:
+            #it's already grabbed, but we'll now get the keyboard events
+            return
     def ungrab_keyboard(self, widget):
         try:
-            self.qtile.display.ungrab_keyboard(X.CurrentTime)
             self.keyboard_grabbers.remove(widget)
+            if not self.keyboard_grabbers:
+                self.qtile.display.ungrab_keyboard(X.CurrentTime)
         except:
             pass
 
-    #############
-    # COMPATIBILITY: act like an old bar
-    #############
-    @property
-    def size(self):
-        return self.height   
+    ############
+    # Commands #
+    ############
+    def _items(self, name):
+        if name == "screen":
+            return True, None
+    
+    def _select(self, name, sel):
+        if name == "screen":
+            return self.screen
 
-    @property
-    def position(self):
-        if self.edge == self.TOP:
-            return "top"
-        elif self.edge == self.BOTTOM:
-            return "bottom"
-        elif self.edge == self.LEFT:
-            return "left"
-        elif self.edge == self.RIGHT:
-            return "right"
-
-    #############
-    # COMMAND OBJECT STUFF
-    #############
     def cmd_fake_click(self, x, y):
         class _fake: pass
         fake = _fake()
@@ -298,20 +368,21 @@ class Bar(CommandObject):
         fake.state = mask
         fake.detail = keycode
         self.handle_KeyPress(fake)
-
+    
     def cmd_info(self):
         return self.info()
 
     def info(self):
-        print "in barinfo"
         widgetdata = {}
         for k,v in self.widgetData.items():
-            widgetdata[k.name] = {'offset': v['offset'], 
-                                  'width': v['width'] }
+            widgetdata[k.name] = {'xoffset': v.offset, 
+                                  'width': v.width }
         return dict(
-            edge = self.edge,
-            width = self.width,
-            height = self.height,
+            placement = self.placement,
+            rotation = self.rotation,
+            placement_align = self.placement_align,
+            width = self.w,
+            height = self.h,
             window = self.window.window.id,
             widgets = [i.info() for i in self.widgets],
             widgetdata = widgetdata,
