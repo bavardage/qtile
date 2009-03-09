@@ -10,8 +10,8 @@ class TextBox(Widget):
         self.font = None
         self.textheight = 0
 
-    def _configure(self, bar, theme):
-        Widget._configure(self, bar, theme)
+    def _configure(self, wibox, theme):
+        Widget._configure(self, wibox, theme)
         self.font = ImageFont.truetype(theme["%s_ttffont" % self.name],
                                        theme["%s_ttffontsize" % self.name],
                                        )
@@ -33,7 +33,7 @@ class TextBox(Widget):
     def set_text(self, text, redraw=True):
         self.text = text
         if redraw:
-            self.bar.update_widget(self)
+            self.wibox.update_widget(self)
             #TODO: do the whole width updating thing
 
     

@@ -10,9 +10,9 @@ class Taskbar(Widget):
         Widget.__init__(self, name, width, align)
         self.qtile = None
 
-    def _configure(self, bar, theme):
-        Widget._configure(self, bar, theme)
-        self.qtile = self.bar.qtile
+    def _configure(self, wibox, theme):
+        Widget._configure(self, wibox, theme)
+        self.qtile = self.wibox.qtile
 
         self.font = ImageFont.truetype(theme['taskbar_ttffont'],
                                        theme['taskbar_ttffontsize'],
@@ -21,7 +21,7 @@ class Taskbar(Widget):
         self.setup_hooks()
 
     def draw(self, canvas):
-        self.windows = self.bar.screen.group.windows
+        self.windows = self.wibox.screen.group.windows
         if not self.windows:
             return canvas #no divide by zero for us
         self.box_width = canvas.size[0]/len(self.windows)
@@ -44,7 +44,7 @@ class Taskbar(Widget):
                 fg = self.theme['taskbar_fg_urgent']
                 bg = self.theme['taskbar_bg_urgent']
                 border = self.theme['taskbar_border_urgent']
-            elif w is self.bar.screen.group.currentWindow:
+            elif w is self.wibox.screen.group.currentWindow:
                 fg = self.theme['taskbar_fg_focus']
                 bg = self.theme['taskbar_bg_focus']
                 border = self.theme['taskbar_border_focus']
@@ -91,4 +91,4 @@ class Taskbar(Widget):
         @Hooks("client-urgent-hint-changed")
         @Hooks("client-focus")
         def update_hook(datadict, qtile, *args):
-            self.bar.update_widget(self) #request a redraw
+            self.wibox.update_widget(self) #request a redraw

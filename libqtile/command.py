@@ -60,7 +60,7 @@ class _Server(ipc.Server):
         self.qtile = qtile
         self.widgets = {}
         for i in conf.screens:
-            for j in i.gaps:
+            for j in i.wiboxes:
                 if hasattr(j, "widgets"):
                     for w in j.widgets:
                         if w.name:
@@ -142,11 +142,11 @@ class _TLayout(_CommandTree):
 
 class _TWidget(_CommandTree):
     name = "widget"
-    _contains = ["bar", "screen", "group"]
+    _contains = ["wibox", "screen", "group"]
 
 
-class _TBar(_CommandTree):
-    name = "bar"
+class _TWibox(_CommandTree):
+    name = "wibox"
     _contains = ["screen"]
 
 
@@ -157,7 +157,7 @@ class _TWindow(_CommandTree):
 
 class _TScreen(_CommandTree):
     name = "screen"
-    _contains = ["layout", "window", "bar"]
+    _contains = ["layout", "window", "wibox"]
 
 
 class _TGroup(_CommandTree):
@@ -180,7 +180,7 @@ class _TSublayout(_CommandTree):
 _TreeMap = {
     "layout":   _TLayout,
     "widget":   _TWidget,
-    "bar":      _TBar,
+    "wibox":      _TWibox,
     "window":   _TWindow,
     "screen":   _TScreen,
     "group":    _TGroup,
@@ -192,7 +192,7 @@ _TreeMap = {
 
 class _CommandRoot(_CommandTree):
     name = None
-    _contains = ["layout", "widget", "screen", "bar", "window", "group"]
+    _contains = ["layout", "widget", "screen", "wibox", "window", "group"]
     def __init__(self):
         """
             This method constructs the entire hierarchy of callable commands

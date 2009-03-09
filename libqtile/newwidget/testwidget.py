@@ -5,6 +5,7 @@ class TestWidget(Widget):
         print "initialising testwidget"
         Widget.__init__(self, name, width, align)
         self.color = color
+        print "Done with init"
 
     def draw(self, canvas):
         w, h = canvas.size
