@@ -45,14 +45,14 @@ class PromptBox(TextBox):
         self.completer = (completer if completer else PathCompleter())
         self.completer_generator = None
 
-    def _configure(self, bar, theme):
-        TextBox._configure(self, bar, theme)
+    def _configure(self, wibox, theme):
+        TextBox._configure(self, wibox, theme)
 
     def grab_keyboard(self):
-        self.bar.grab_keyboard(self)
+        self.wibox.grab_keyboard(self)
 
     def ungrab_keyboard(self):
-        self.bar.ungrab_keyboard(self)
+        self.wibox.ungrab_keyboard(self)
 
     def done(self):
         Hooks.call_hook("promptbox-%s-done" % self.name, self.command_text)
@@ -99,8 +99,8 @@ class PromptBox(TextBox):
         self.completer_generator = None
             
     def handle_KeyPress(self, e):
-        keysym = self.bar.qtile.display.keycode_to_keysym(e.detail, e.state)
-        keystring = self.bar.qtile.display.lookup_string(keysym)
+        keysym = self.wibox.qtile.display.keycode_to_keysym(e.detail, e.state)
+        keystring = self.wibox.qtile.display.lookup_string(keysym)
         print "keysym", keysym
         print "keycode", e.detail
         print "keystring", keystring

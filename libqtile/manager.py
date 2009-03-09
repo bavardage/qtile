@@ -52,57 +52,47 @@ class Key:
 
 class Screen(command.CommandObject):
     group = None
-    def __init__(self, top=None, bottom=None, left=None, right=None):
+    def __init__(self, wiboxes):
         """
-            :top An instance of bar.Gap or bar.Bar or None.
-            :bottom An instance of bar.Gap or bar.Bar or None.
-            :left An instance of bar.Gap or None.
-            :right An instance of bar.Gap or None.
+            :wiboxes An array of wiboxes
         """
-        self.top, self.bottom = top, bottom
-        self.left, self.right = left, right
+        self.wiboxes = wiboxes
+        self.margins = {'left': 0,
+                        'right': 0,
+                        'top': 0,
+                        'bottom': 0
+                        }
 
     def _configure(self, qtile, theme, index, x, y, width, height, group):
         self.qtile, self.theme, = qtile, theme
         self.index, self.x, self.y = index, x, y,
         self.width, self.height = width, height
         self.setGroup(group)
-        for i in self.gaps:
-            i._configure(qtile, self, theme)
+        for w in self.wiboxes:
+            w._configure(qtile, self, theme)
 
-    @property
-    def gaps(self):
-        lst = []
-        for i in [self.top, self.bottom, self.left, self.right]:
-            if i:
-                lst.append(i)
-        return lst
+    def increase_margin(self, margin, amount):
+        self.margins[margin] += amount
 
     @property
     def dx(self):
-        return self.x + self.left.size if self.left else self.x
+        return self.x + self.margins['left']
 
     @property
     def dy(self):
-        return self.y + self.top.size if self.top else self.y
+        return self.y + self.margins['top']
 
     @property
     def dwidth(self):
-        val = self.width
-        if self.left:
-            val -= self.left.size
-        if self.right:
-            val -= self.right.size
-        return val
+        return self.width - \
+            self.margins['left'] -\
+            self.margins['right']
 
     @property
     def dheight(self):
-        val = self.height
-        if self.top:
-            val -= self.top.size
-        if self.bottom:
-            val -= self.bottom.size
-        return val
+        return self.height - \
+            self.margins['top'] - \
+            self.margins['bottom']
 
     def setGroup(self, group):
         if group.screen == self:
@@ -121,13 +111,19 @@ class Screen(command.CommandObject):
             group._setScreen(self)
         Hooks.call_hook("group-to-screen", group)
 
+    def get_wibox(self, name):
+        for w in self.wiboxes:
+            if w.name == name:
+                return w
+        return None #TODO: better return value
+
     def _items(self, name):
         if name == "layout":
             return True, range(len(self.group.layouts))
         elif name == "window":
             return True, [i.window.id for i in self.group.windows]
-        elif name == "bar":
-            return False, [x.position for x in self.gaps]
+        elif name == "wibox":
+            return False, [w.name for w in self.wiboxes]
 
     def _select(self, name, sel):
         if name == "layout":
@@ -142,8 +138,8 @@ class Screen(command.CommandObject):
                 for i in self.group.windows:
                     if i.window.id == sel:
                         return i
-        elif name == "bar":
-            return getattr(self, sel)
+        elif name == "wibox":
+            return self.get_wibox(sel)
 
     def resize(self, x=None, y=None, w=None, h=None):
         x = x or self.x
@@ -151,9 +147,8 @@ class Screen(command.CommandObject):
         w = w or self.width
         h = h or self.height
         self._configure(self.qtile, self.theme, self.index, x, y, w, h, self.group)
-        for bar in [self.top, self.bottom, self.left, self.right]:
-            if bar:
-                bar.resize()
+        for w in self.wiboxes:
+            w._screen_resize()
         self.group.layoutAll()
 
     def cmd_info(self):
@@ -563,7 +558,7 @@ class Qtile(command.CommandObject):
 
     def registerWidget(self, w):
         """
-            Register a bar widget. If a widget with the same name already
+            Register a widget. If a widget with the same name already
             exists, this raises a ConfigError.
         """
         if w.name:
@@ -783,8 +778,8 @@ class Qtile(command.CommandObject):
             return True, range(len(self.currentGroup.layouts))
         elif name == "widget":
             return False, self.widgetMap.keys()
-        elif name == "bar":
-            return False, [x.position for x in self.currentScreen.gaps]
+        elif name == "wibox":
+            return False, [w.name for w in self.currentScreen.wiboxes]
         elif name == "window":
             return True, self.listWID()
         elif name == "screen":
@@ -803,8 +798,8 @@ class Qtile(command.CommandObject):
                 return utils.lget(self.currentGroup.layouts, sel)
         elif name == "widget":
             return self.widgetMap.get(sel)
-        elif name == "bar":
-            return getattr(self.currentScreen, sel)
+        elif name == "wibox":
+            return self.currentScreen.get_wibox(sel)
         elif name == "window":
             if sel is None:
                 return self.currentWindow
@@ -855,7 +850,7 @@ class Qtile(command.CommandObject):
 
     def cmd_internal(self):
         """
-            Return info for each internal window (bars, for example).
+            Return info for each internal window (wiboxes, for example).
         """
         return [i.info() for i in self.internalMap.values()]
 
@@ -940,12 +935,7 @@ class Qtile(command.CommandObject):
                 y = i.y,
                 width = i.width,
                 height = i.height,
-                gaps = dict(
-                    top = i.top.geometry() if i.top else None,
-                    bottom = i.bottom.geometry() if i.bottom else None,
-                    left = i.left.geometry() if i.left else None,
-                    right = i.right.geometry() if i.right else None,
-                )
+                margins = i.margins,
             ))
         return lst
 

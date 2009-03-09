@@ -6,9 +6,9 @@ from Xlib import X
 
 class SystemTray(Widget):
     height = 0
-    def _configure(self, bar, theme):
-        Widget._configure(self, bar, theme)
-        self.qtile = self.bar.qtile
+    def _configure(self, wibox, theme):
+        Widget._configure(self, wibox, theme)
+        self.qtile = self.wibox.qtile
         self.icons = {}
         self._init_internal_window()
 
@@ -41,13 +41,13 @@ class SystemTray(Widget):
         task = e.data[1][2] # taskid
         if e.client_type == self._OPCODE and data == 0:
             icon_window = self.qtile.display.create_resource_object("window", task)
-            icon_window.reparent(self.bar.window.window.id, 0, 0)
+            icon_window.reparent(self.wibox.window.window.id, 0, 0)
             icon_window.change_attributes(
                 event_mask=(X.ExposureMask|X.StructureNotifyMask)
                 )
             self.icons[icon_window.id] = icon_window
             self.qtile.internalMap[icon_window] = self
-            self.bar.update_widget(self)
+            self.wibox.update_widget(self)
 
     def handle_ConfigureNotify(self, e):
         if e.window.id in self.icons:
@@ -60,7 +60,7 @@ class SystemTray(Widget):
         destroyed_id = e.window.id
         if destroyed_id in self.icons:
             del self.icons[destroyed_id]
-            self.bar.update_widget(self)
+            self.wibox.update_widget(self)
         
     def sendEvent(self, win, ctype, data, mask=None):
         """ Send a ClientMessage event to the root """
@@ -75,7 +75,7 @@ class SystemTray(Widget):
         width, height = canvas.size
         self.height = height #for configurenotify
         pos = \
-            self.bar.widgetData[self]['offset'] + width
+            self.wibox.widgetData[self].xoffset + width
         
         #now place icon windows, from the 'right'
         for icoid, ico in self.icons.items():
@@ -83,7 +83,7 @@ class SystemTray(Widget):
             y = 0
             w = height
             h = height
-            x,y,w,h = self.bar.coords_bar_to_window(x,y,w,h)
+            x,y,w,h = self.wibox.coords_wibox_to_window(x,y,w,h)
             ico.configure(onerror=None, 
                           x=x, y=y, 
                           width=w,
