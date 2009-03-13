@@ -1,9 +1,20 @@
 from .. import command
 
+class WidgetData:
+    width = 0
+    xoffset = 0
+    yoffset = 0
+    image = None
+    def __init__(self, widget):
+        self.widget = widget
+
+
 class Widget(command.CommandObject):
     ALIGN_LEFT, ALIGN_RIGHT = 1,2
     WIDTH_AUTO = -1
+    height_req = None
     def __init__(self, name, width, align=ALIGN_LEFT):
+        self.widget_data = WidgetData(self)
         self.name = name
         self.width_req = width
         self.align = align
