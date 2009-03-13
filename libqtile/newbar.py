@@ -312,7 +312,7 @@ class Wibox(CommandObject, WiboxConstants):
                                    (self.w, self.h),
                                    self.theme["bar_bg_normal"],
                                    )
-        Hooks.call_hook("bar-draw", self.baseimage)
+        Hooks.call_hook("wibox-draw", self.baseimage)
 
     
     def _screen_resize():
@@ -331,6 +331,8 @@ class Wibox(CommandObject, WiboxConstants):
 
         rgbimage = self.image.convert("RGB")
         rgbimage = rgbimage.rotate(self.rotation, expand=1)
+
+        Hooks.call_hook("wibox-drawn", rgbimage)
 
         self.window.window.put_pil_image(self.gc,
                                          0, 0,
