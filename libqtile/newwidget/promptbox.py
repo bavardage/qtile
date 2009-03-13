@@ -37,7 +37,7 @@ class PathCompleter(Completer):
                     suggested_once = True
 
 class PromptBox(TextBox):
-    def __init__(self, name, prompt, width, align=Widget.ALIGN_LEFT, completer=None):
+    def __init__(self, name, prompt, width, align="left", completer=None):
         TextBox.__init__(self, name, prompt, width, align)
         self.prompt = prompt
         self.command_text = ''

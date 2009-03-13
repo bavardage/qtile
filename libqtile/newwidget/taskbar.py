@@ -6,7 +6,7 @@ import ImageDraw
 
 class Taskbar(Widget):
     PADDING = 4
-    def __init__(self, name, width, align=Widget.ALIGN_LEFT):
+    def __init__(self, name, width, align="left"):
         Widget.__init__(self, name, width, align)
         self.qtile = None
 

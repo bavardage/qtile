@@ -4,7 +4,7 @@ import ImageDraw
 import ImageFont
 
 class TextBox(Widget):
-    def __init__(self, name, text, width=Widget.WIDTH_AUTO, align=Widget.ALIGN_LEFT):
+    def __init__(self, name, text, width=None, align="left"):
         Widget.__init__(self, name, width, align)
         self.text = text
         self.font = None
@@ -15,7 +15,7 @@ class TextBox(Widget):
         self.font = ImageFont.truetype(theme["%s_ttffont" % self.name],
                                        theme["%s_ttffontsize" % self.name],
                                        )
-        if self.width_req == self.WIDTH_AUTO:
+        if self.width_req is None:
             self.width_req, self.textheight = self.font.getsize(self.text)
         else:
             self.textheight = self.font.getsize(self.text)[1]
