@@ -6,6 +6,7 @@ from command import CommandObject, CommandError
 
 import Image
 from Xlib import X
+import sys
 
 '''
 Note:
@@ -16,16 +17,15 @@ x is horizontal displacement,
 y is vertical displacement
 '''
 
-class WidgetData:
-    width = 0
-    xoffset = 0
-    yoffset = 0
-    image = None
-    def __init__(self, widget):
-        self.widget = widget
-        
+class NL(Widget):
+    '''
+    A semaphor class to indicate a New widget Layer
+    '''
+    def __init__(self):
+        Widget.__init__(self, "newlayer", 0)
 
-class Wibox(CommandObject):
+
+class WiboxConstants:
     AUTO_HEIGHT = 20
     dimensions = [
         "expand", #expand to fit all widgets' initial width request
@@ -33,8 +33,114 @@ class Wibox(CommandObject):
     placements = ["top", "bottom", "right", "left", "floating"]
     placement_align = ["left", "center", "right"]
     rotation = [0, 90, 180, 270, "auto"]
+
+
+class WidgetLayer(WiboxConstants):
+    '''
+    A horizontal group of widgets
+    '''
+    def __init__(self, wibox, widgets):
+        self.wibox = wibox
+        self.widgets = widgets
+        self.widgetData = {}
+        for w in self.widgets:
+            self.widgetData[w] = w.widget_data
+        self.need_arrange = True
+
+    def _configure(self, width, height):
+        self.w = width
+        self.h = height
+
+    def configure_and_register_widgets(self, qtile, theme):
+        for w in self.widgets:
+            qtile.registerWidget(w)
+            w._configure(self.wibox, theme)
+
+    def arrange_widgets(self):
+        width = self.w
+        ledge, redge = 0, width
+
+        widgets = self.widgets
+        lalign = [w for w in widgets \
+                      if w.align == Widget.ALIGN_LEFT]
+        ralign = [w for w in widgets \
+                      if w.align == Widget.ALIGN_RIGHT]
+        ralign.reverse()
+
+        for w in lalign:
+            if redge - ledge <= 0:
+                print >> sys.stderr, "not enough room to fit %s" % w.name
+                break
+            elif redge - ledge >= w.width_req:
+                self.widgetData[w].width = w.width_req
+                self.widgetData[w].xoffset = ledge
+            else:
+                self.widgetData[w].width = redge - ledge
+                self.widgetData[w].xoffset = ledge
+            ledge += self.widgetData[w].width
+        
+        for w in ralign:
+            if redge - ledge <= 0:
+                print >> sys.stderr, "not enough room to fit %s" % w.name
+                break
+            elif redge - ledge >= w.width_req:
+                self.widgetData[w].width = width = w.width_req
+                self.widgetData[w].xoffset = redge - width
+            else:
+                self.widgetData[w].width = width = redge - ledge
+                self.widgetData[w].xoffset = redge - width
+            redge -= self.widgetData[w].width
+
+        self.need_arrange = False
+
+    def draw_widget(self, w):
+        data = self.widgetData[w]
+        im = w.draw(
+            Image.new("RGBA", #the canvas
+                      (data.width, self.h),
+                      )
+            )
+        self.widgetData[w].image = im
+
+
+    def draw(self, canvas, yoffset):
+        ''' Draw this layer of widgets onto the canvas '''
+        if self.need_arrange:
+            self.arrange_widgets()
+        for w, data in self.widgetData.items():
+            if data.image is None:
+                self.draw_widget(w)
+            canvas.paste(data.image,
+                         (data.xoffset, yoffset),
+                         data.image,
+                         )
+    @classmethod
+    def makeLayers(cls, wibox, widgets):
+        widgetLists = cls.splitWidgetList(widgets)
+        return [cls(wibox, wl) for wl in widgetLists]
+    @classmethod
+    def splitWidgetList(cls, widgets):
+        '''
+        Split a list of widgets into sublists,
+        breaking when a widget of class NL is found
+        '''        
+        layers = []
+        currentList = []
+        for w in widgets:
+            if isinstance(w, NL):
+                layers.append(currentList)
+                currentList = []
+            else:
+                currentList.append(w)
+        if currentList:
+            layers.append(currentList)
+        return layers
+    
+    
+class Wibox(CommandObject, WiboxConstants):
     def __init__(self, name, widgets, placement, 
-                 x=0, y=0, width="expand", height=AUTO_HEIGHT,
+                 x=0, y=0, width="expand", 
+                 height=WiboxConstants.AUTO_HEIGHT,
                  placement_align = "center",
                  rotation = "auto"):
         #TODO: add error checking for parameters
@@ -42,7 +148,8 @@ class Wibox(CommandObject):
         self.widgets = widgets
         self.widgetData = {}
         for w in self.widgets:
-            self.widgetData[w] = WidgetData(w)
+            self.widgetData[w] = w.widget_data
+        self.widgetLayers = []
         self.placement = placement
         self.placement_align = placement_align
         self.rotation = rotation
@@ -68,27 +175,41 @@ class Wibox(CommandObject):
         self.screen = screen
         self.theme = theme
 
-        for w in self.widgets:
-            self.qtile.registerWidget(w)
-            w._configure(self, theme)
+        self.widgetLayers = WidgetLayer.makeLayers(self, self.widgets)
+        for wl in self.widgetLayers:
+            wl.configure_and_register_widgets(qtile, theme)
 
         self._init_rotation()
-
         self._init_size()
-        
         self._init_position()
-
         self._init_margin()
-
         self._init_window()
 
     def _init_size(self):
         if self.w == "expand":
-            self.w = sum(
-                [w.width_req for w in self.widgets]
+            self.w = max(
+                [sum([w.width_req for w in wl.widgets]) \
+                     for wl in self.widgetLayers]
                 )
+        expanded_height = False
         if self.h == "expand":
-            self.h = self.AUTO_HEIGHT #TODO: add height request
+            expanded_height = True
+            self.h = sum(
+                [max([(w.height_req or self.AUTO_HEIGHT) \
+                          for w in wl.widgets]) \
+                     for wl in self.widgetLayers]
+                )
+        for wl in self.widgetLayers:
+            if expanded_height:
+                wl._configure(self.w, 
+                             max([(w.height_req or self.AUTO_HEIGHT) \
+                                      for w in wl.widgets])
+                             )
+            else:
+                wl._configure(self.w,
+                             self.h/len(self.widgetLayers)
+                             )
+                         
 
     def _init_position(self):
         p = self.placement
@@ -193,70 +314,21 @@ class Wibox(CommandObject):
                                    )
         Hooks.call_hook("bar-draw", self.baseimage)
 
-    def arrange_widgets(self):
-        width = self.w
-        ledge, redge = 0, width
-
-        widgets = self.widgets
-        lalign = [w for w in widgets \
-                      if w.align == Widget.ALIGN_LEFT]
-        ralign = [w for w in widgets \
-                      if w.align == Widget.ALIGN_RIGHT]
-        ralign.reverse()
-
-        for w in lalign:
-            if redge - ledge <= 0:
-                print "not enough room to fit %s" % w.name
-                break
-            elif redge - ledge >= w.width_req:
-                self.widgetData[w].width = w.width_req
-                self.widgetData[w].xoffset = ledge
-            else:
-                self.widgetData[w].width = redge - ledge
-                self.widgetData[w].xoffset = ledge
-            ledge += self.widgetData[w].width
-        
-        for w in ralign:
-            if redge - ledge <= 0:
-                print "not enough room to fit %s" % w.name
-                break
-            elif redge - ledge >= w.width_req:
-                self.widgetData[w].width = width = w.width_req
-                self.widgetData[w].xoffset = redge - width
-            else:
-                self.widgetData[w].width = width = redge - ledge
-                self.widgetData[w].xoffset = redge - width
-            redge -= self.widgetData[w].width
-
-        self.need_arrange = False
-
+    
     def _screen_resize():
         pass #TODO: handle this nicely
 
-    def draw_widget(self, w):
-        data = self.widgetData[w]
-        im = w.draw(
-            Image.new("RGBA", #the canvas
-                      (data.width, self.h),
-                      )
-            )
-        self.widgetData[w].image = im
-
     def draw(self):
-        if self.need_arrange:
-            self.arrange_widgets()
         if not self.baseimage:
             self._init_baseimage()
 
         self.image = self.baseimage.copy()
+        
+        yoffset = 0
+        for wl in self.widgetLayers:
+            wl.draw(self.image, yoffset)
+            yoffset += wl.h
 
-        for w, data in self.widgetData.items():
-            if data.image is None:
-                self.draw_widget(w)
-            self.image.paste(data.image,
-                             (data.xoffset, 0),
-                             data.image,
-                             )
         rgbimage = self.image.convert("RGB")
         rgbimage = rgbimage.rotate(self.rotation, expand=1)
 

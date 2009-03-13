@@ -75,7 +75,7 @@ class SystemTray(Widget):
         width, height = canvas.size
         self.height = height #for configurenotify
         pos = \
-            self.wibox.widgetData[self].xoffset + width
+            self.widget_data.xoffset + width
         
         #now place icon windows, from the 'right'
         for icoid, ico in self.icons.items():

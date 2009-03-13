@@ -18,8 +18,10 @@ class IconBox(Widget):
             self.width_req = self.wibox.h 
             if self.width_req == "expand":
                 self.width_req = FALLBACK_WIDTH
+                self.height_req = FALLBACK_WIDTH
         else:
-            self.width_req = self.orig_icon.size[1]
+            self.width_req = self.orig_icon.size[0]
+            self.height_req = self.orig_icon.size[1]
         print "icon's w_req is", self.width_req
     
     def draw(self, canvas):
