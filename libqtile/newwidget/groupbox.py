@@ -21,13 +21,17 @@ class GroupBox(Widget):
                                        theme['groupbox_ttffontsize'],
                                        )
 
+        heights = []
         self.groups = self.qtile.groups
         for group in self.groups:
             self.groupnamewidths[group.name] = \
                 self.font.getsize(group.name)[0]
+            heights.append(self.font.getsize(group.name)[0])
 
         self.width_req = sum([w for g,w in self.groupnamewidths.items()]) + \
             len(self.groups) * self.PADDING * 2 #pad each side
+        self.height_req = max(heights) + 2*self.PADDING
+
         self.setup_hooks()
 
 
