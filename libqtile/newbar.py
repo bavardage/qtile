@@ -114,6 +114,12 @@ class WidgetLayer(WiboxConstants):
                          (data.xoffset, yoffset),
                          data.image,
                          )
+
+    def click(self, x, y):
+        for w, d in self.widgetData.items():
+            if d.xoffset <= x <= d.xoffset + d.width:
+                w.click(x - d.xoffset, y)
+
     @classmethod
     def makeLayers(cls, wibox, widgets):
         widgetLists = cls.splitWidgetList(widgets)
@@ -372,9 +378,15 @@ class Wibox(CommandObject, WiboxConstants):
     def handle_ButtonPress(self, e):
         x,y = e.event_x, e.event_y
         x,y = self.coords_window_to_wibox(x,y,0,0)[:2]
-        for w, d in self.widgetData.items():
-            if d.xoffset <= x <= d.xoffset + d.width:
-                w.click(x - d.xoffset, y)
+        yoffset = 0
+        print "Button press at", x, y
+        for wl in self.widgetLayers:
+            if yoffset <= y <= yoffset + wl.h:
+                print "yes for layer"
+                wl.click(x, y-yoffset)
+            else:
+                print "no for layer"
+            yoffset += wl.h
     def handle_KeyPress(self, e):
         if not self.keyboard_grabbers:
             return
