@@ -45,16 +45,15 @@ class WidgetLayer(WiboxConstants):
         self.widgetData = {}
         for w in self.widgets:
             self.widgetData[w] = w.widget_data
+            w.widget_data.layer = self
         self.need_arrange = True
+
+        self.w = "expand"
+        self.h = "expand" #indicate that we're still in flux
 
     def _configure(self, width, height):
         self.w = width
         self.h = height
-
-    def configure_and_register_widgets(self, qtile, theme):
-        for w in self.widgets:
-            qtile.registerWidget(w)
-            w._configure(self.wibox, theme)
 
     def arrange_widgets(self):
         width = self.w
@@ -62,9 +61,9 @@ class WidgetLayer(WiboxConstants):
 
         widgets = self.widgets
         lalign = [w for w in widgets \
-                      if w.align == Widget.ALIGN_LEFT]
+                      if w.align == "left"]
         ralign = [w for w in widgets \
-                      if w.align == Widget.ALIGN_RIGHT]
+                      if w.align == "right"]
         ralign.reverse()
 
         for w in lalign:
@@ -95,9 +94,10 @@ class WidgetLayer(WiboxConstants):
 
     def draw_widget(self, w):
         data = self.widgetData[w]
+        height = min(self.h, w.height_req)            
         im = w.draw(
             Image.new("RGBA", #the canvas
-                      (data.width, self.h),
+                      (data.width, height),
                       )
             )
         self.widgetData[w].image = im
@@ -117,7 +117,8 @@ class WidgetLayer(WiboxConstants):
 
     def click(self, x, y):
         for w, d in self.widgetData.items():
-            if d.xoffset <= x <= d.xoffset + d.width:
+            if d.xoffset <= x <= d.xoffset + d.width and \
+                    0 <= y <= min(self.h, w.height_req):
                 w.click(x - d.xoffset, y)
 
     @classmethod
@@ -182,29 +183,47 @@ class Wibox(CommandObject, WiboxConstants):
         self.theme = theme
 
         self.widgetLayers = WidgetLayer.makeLayers(self, self.widgets)
-        for wl in self.widgetLayers:
-            wl.configure_and_register_widgets(qtile, theme)
+        self.widgets = [w for w in self.widgets \
+                            if not isinstance(w, NL)]
+
+        for w in self.widgets:
+            qtile.registerWidget(w)
+            w._configure(self, theme)
 
         self._init_rotation()
         self._init_size()
+
+        for w in self.widgets:
+            w._reconfigure()
+
         self._init_position()
         self._init_margin()
         self._init_window()
 
     def _init_size(self):
         if self.w == "expand":
-            self.w = max(
-                [sum([w.width_req for w in wl.widgets]) \
-                     for wl in self.widgetLayers]
-                )
+            layerWidths = []
+            for wl in self.widgetLayers:
+                layerWidths.append(
+                    sum([w.width_req \
+                             for w in wl.widgets]
+                        )
+                    )
+            print "layerWidths", layerWidths
+            self.w = max(layerWidths)
+            
         expanded_height = False
         if self.h == "expand":
             expanded_height = True
-            self.h = sum(
-                [max([(w.height_req or self.AUTO_HEIGHT) \
-                          for w in wl.widgets]) \
-                     for wl in self.widgetLayers]
-                )
+            layerHeights = []
+            for wl in self.widgetLayers:
+                layerHeights.append(
+                    max([w.height_req \
+                             for w in wl.widgets]
+                        )
+                    )
+            self.h = sum(layerHeights)
+            
         for wl in self.widgetLayers:
             if expanded_height:
                 wl._configure(self.w, 
@@ -346,6 +365,12 @@ class Wibox(CommandObject, WiboxConstants):
                                          )
     def update_widget(self, w):
         self.widgetData[w].image = None
+        self.draw()
+
+    def update_widget_size(self, w):
+        for wl in self.widgetLayers:
+            if w in wl.widgets:
+                wl.need_arrange = True
         self.draw()
 
     def coords_window_to_wibox(self, x,y,w,h):
