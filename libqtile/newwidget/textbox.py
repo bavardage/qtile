@@ -19,6 +19,7 @@ class TextBox(Widget):
             self.width_req, self.textheight = self.font.getsize(self.text)
         else:
             self.textheight = self.font.getsize(self.text)[1]
+        self.height_req = self.textheight
 
     def draw(self, canvas):
         draw = ImageDraw.Draw(canvas)
