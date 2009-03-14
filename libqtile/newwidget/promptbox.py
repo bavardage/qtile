@@ -49,16 +49,21 @@ class PromptBox(TextBox):
         TextBox._configure(self, wibox, theme)
 
     def grab_keyboard(self):
+        Hooks.call_hook("promptbox-%s-start" % self.name, self)
         self.wibox.grab_keyboard(self)
 
     def ungrab_keyboard(self):
         self.wibox.ungrab_keyboard(self)
 
     def done(self):
-        Hooks.call_hook("promptbox-%s-done" % self.name, self.command_text)
-        self.abort()
+        Hooks.call_hook("promptbox-%s-done" % self.name, self)
+        self.stop()
 
     def abort(self):
+        Hooks.call_hook("promptbox-%s-aborted" % self.name, self)
+        self.stop()
+
+    def stop(self):
         self.command_text = ""
         self.cursor_position = 0
         self.stop_completion()
