@@ -1,4 +1,5 @@
 from Xlib import Xatom
+from ... import window, command
 
 class Rect:
     def __init__(self, x=0, y=0, w=0, h=0):
@@ -42,15 +43,16 @@ class Rect:
         return "(%s, %s, %s, %s)" % (self.x, self.y, self.w, self.h)
 
 
-class SubLayout:
-    def __init__(self, clientStack, theme, parent=None, autohide=True):
+class SubLayout(command.CommandObject):
+    def __init__(self, clientStack, parent=None, autohide=True):
         """
            autohide - does it hide itself if there are no clients
         """
         self.clientStack = clientStack
+        self.theme = self.clientStack.theme
         self.clients = []
         self.sublayouts = []
-        self.theme = theme
+        self.sublayout_names = {}
         self.parent = parent
         self.autohide = autohide
         self.windows = []
@@ -150,79 +152,76 @@ class SubLayout:
         raise NotImplementedError, "this is %s" % self.__class__.__name__
 
     def place(self, client, x, y, w, h):
-        bc, opacity = ((self.focused_border, 1.0) \
+        bc = (self.focused_border \
                   if self.clientStack.focus_history \
                   and self.clientStack.focus_history[0] is client \
-                  else (self.normal_border, 0.5)
-              )
-        client.place(x,
-                     y,
-                     w - 2*self.border_width,
-                     h - 2*self.border_width,
-                     self.border_width,
-                     bc
-                     )
-        client.unhide()
-        client.opacity = opacity
+                  else self.normal_border)
+              
 
-    def command_get_arg(self, args, kwargs, name, default):
-        if name in kwargs:
-            return kwargs['name']
-        elif args:
-            if name < len(args):
-                return args[name]
-            else:
-                return args[0]
-        else:
-            return default
-        
+        next_placement = {
+            'x': x,
+            'y': y,
+            'w': w - 2*self.border_width,
+            'h': h - 2*self.border_width,
+            'bw': self.border_width,
+            'bc': bc,
+            'hi': False,
+            }
+        #copy key by key, since not all values are given e.g. hidden
+        for k,v in next_placement.items():
+            client.next_placement[k] = v
+    
+    def hide_client(self, client):
+        client.next_placement['hi'] = True
 
-    def command(self, mask, command, *args, **kwargs):
-        def split_command(command):
-            parts = command.split('_')
-            if len(parts) > 1:
-                mask = parts[0]
-                com = '_'.join(parts[1:])
-            else:
-                mask = '*'
-                com = '_'.join(parts)
-            return (mask, com)
-            
-        for sl in self.sublayouts:
-            if mask == '*':
-                sl.command(mask, command, *args, **kwargs)
-            elif mask == '?':
-                ma, com = split_command(command)
-                self.command(ma, com, *args, **kwargs)
-            elif mask == sl.__class__.__name__:
-                ma, com = split_command(command)
-                self.comand(ma, com, *args, **kwargs)
-            else:
-                print >> sys.stderr, "command ('%s' '%s') not passed on" % (mask, command)
+############
+# Commands #
+############
+    def _items(self, name):
+        if name == 'sl':
+            return True, self.sublayout_names.keys()
+    
+    def _select(self, name, sel):
+        if name == 'sl':
+            return self.sublayout_names[sel]
+
+    def cmd_info(self):
+        return dict(
+            name=self.__class__.__name__,
+            )
 
 class TopLevelSubLayout(SubLayout):
     '''
        This class effectively wraps a sublayout, and automatically adds a floating sublayout,
     '''
-    def __init__(self, sublayout_data, clientStack, theme):
+    def __init__(self, sublayout_data, clientStack):
         WrappedSubLayout, args = sublayout_data
-        SubLayout.__init__(self, clientStack, theme)
+        SubLayout.__init__(self, clientStack)
+        self.sublayouts.append(SpecialWindowTypes(clientStack,
+                                                  parent=self
+                                                  )
+                               )
         self.sublayouts.append(Minimised(clientStack,
-                                         theme,
+                                         parent=self
+                                         )
+                               )
+        self.sublayouts.append(Maximised(clientStack,
                                          parent=self
                                          )
                                )
         self.sublayouts.append(Floating(clientStack,
-                                        theme,
                                         parent=self
                                         )
                                )
         self.sublayouts.append(WrappedSubLayout(clientStack,
-                                         theme,
                                          parent=self,
                                          **args
                                          )
                                )
+        self.sublayout_names = {'minimised': self.sublayouts[0],
+                                'floating': self.sublayouts[1],
+                                'main': self.sublayouts[2],
+                                }
 
 
 class VerticalStack(SubLayout):
@@ -272,4 +271,24 @@ class Minimised(SubLayout):
         return (Rect(), r) #we want nothing
     
     def configure(self, r, client):
-        client.hide()
+        self.hide_client(client)
+
+class Maximised(SubLayout):
+    def filter(self, client):
+        return client.maximised
+    
+    def request_rectangle(self, r, clients):
+        return (r, r) #yeah sure let the others have their way...
+            #UNDERNEATH US. muahahaha
+    
+    def configure(self, r, client):
+        self.place(client,
+                   r.x,
+                   r.y,
+                   r.w,
+                   r.h
+                   )
+
+class SpecialWindowTypes(Floating):
+    def filter(self, client):
+        return client.window_type != "normal"

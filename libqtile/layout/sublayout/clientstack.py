@@ -1,6 +1,38 @@
 from ..base import Layout
 from sublayout import SubLayout, Rect, TopLevelSubLayout
-from ... import command, utils
+from ... import command, utils, window
+from ...manager import Hooks
+from Xlib import X
+
+class Layers:
+    BOTTOM = 0
+    DESKTOP = 10
+    BELOW = 20
+    NORMAL = 30
+    ABOVE = 40
+    DIALOG = 50
+    FLOAT = 60
+    MAXIMISE = 70
+    FULLSCREEN = 80
+
+types_states_to_layers = [
+    #states first
+    (lambda c:c.floating, Layers.FLOAT),
+    (lambda c:c.maximised, Layers.MAXIMISE),
+    (lambda c:c.fullscreen, Layers.FULLSCREEN),
+    #then types
+    (lambda c:c.window_type == "normal", Layers.NORMAL),
+    (lambda c:c.window_type == "dialog", Layers.DIALOG),
+    (lambda c:c.window_type == "desktop", Layers.DESKTOP),
+    (lambda c:c.window_type == "dock", Layers.ABOVE),
+    (lambda c: True, Layers.NORMAL), #fallback
+]
+
+def get_layer(tstl, client):
+    for test, layer in tstl:
+        if test(client):
+            return layer
+    return Layers.NORMAL
 
 class ClientStack(Layout):
     name="tile"
@@ -10,7 +42,7 @@ class ClientStack(Layout):
     FOCUS_TO_NEXT, FOCUS_TO_PREVIOUS, \
     FOCUS_TO_LAST_FOCUSED = \
         (5, 6, 7, 8, 9)
-    def __init__(self, SubLayouts, add_mode=ADD_TO_TOP,
+    def __init__(self, SubLayouts, Modifiers=None, add_mode=ADD_TO_TOP,
                  focus_mode=FOCUS_TO_TOP,
                  focus_history_length=10, mouse_warp = False):
         Layout.__init__(self)
@@ -20,6 +52,7 @@ class ClientStack(Layout):
         self.focus_history_length = focus_history_length
         self.mouse_warp = mouse_warp
         # initialise other values #
+        self.need_restack = True
         self.clients = []
         self.focus_history = []
         self.normal_border, self.active_border, self.focused_border = \
@@ -27,16 +60,80 @@ class ClientStack(Layout):
         self.sublayouts = []
         self.current_sublayout = 0
         self.SubLayouts = SubLayouts
+        self.layout_modifiers = {}
+        self.Modifiers = (Modifiers if Modifiers else [])
+
+    def restack(self):
+        print "restacking..."
+        self.need_restack = False
+        tstl = types_states_to_layers
+        layers = []
+        for c in self.clients:
+            layer = get_layer(tstl, c)
+            if c is self.focused:
+                layer += 1
+            layers.append((layer, c))
+        layers.sort()
+        layers.extend([(-1, w.window) for w in self.group.screen.wiboxes \
+                           if w.above]) #just let -1 be the layer
+        layers.reverse()
+        layers.extend([(-1, w.window) for w in self.group.screen.wiboxes \
+                           if not w.above])
+        
+        last = X.NONE
+        for l,client in layers:
+            client.window.configure(
+                sibling = last,
+                stack_mode = X.Below,
+                )
+            last = client.window
 
     def layout(self, windows):
         sl = self.sublayouts[self.current_sublayout]
+        # determine the area available
         rect = Rect(self.group.screen.dx,
                     self.group.screen.dy,
                     self.group.screen.dwidth,
                     self.group.screen.dheight,
                     )
-        sl.layout(rect, self.clients) #screw the group list of windows
-        #we think we know best...
+        # set the windows' next_placement
+        sl.layout(rect, self.clients)
+        #restack if needs be
+        if self.need_restack:
+            self.restack()
+        # modify the placement
+        for c in self.clients:
+            for name,m in self.layout_modifiers.items():
+                if m.active:
+                    m.modify(rect, c)
+        #now actually place the windows
+        for c in self.clients:
+            p = c.next_placement
+            try:
+                c.place(p['x'], p['y'],
+                        p['w'], p['h'],
+                        p['bw'], p['bc'],
+                        )
+                if p['hi']:
+                    c.hide()
+                else:
+                    c.unhide()
+            except:
+                print "Something went wrong"
+                print "Window placement errored"
+      
+    def register_hooks(self):
+        @Hooks("modifier-activated")
+        @Hooks("modifier-disactivated")
+        @Hooks("modifier-toggled")
+        def modifiers_changed(datadict, qtile, modifier):
+            self.group.layoutAll()
+        @Hooks("client-state-changed")
+        @Hooks("client-type-changed")
+        @Hooks("client-focus")
+        def restack_hook(datadict, qtile, *args):
+            self.need_restack = True
+
 
     def configure(self, window):
         # Oh dear, this shouldn't be happening, oh dear what can the matter be, oh dear help help help
@@ -57,9 +154,13 @@ class ClientStack(Layout):
         for SL, kwargs in self.SubLayouts:
             c.sublayouts.append(TopLevelSubLayout((SL, kwargs),
                                                   c,
-                                                  theme,
                                                   )
                                 )
+        c.layout_modifiers = {}
+        for Modifier, kwargs in self.Modifiers:
+            m = Modifier(**kwargs)
+            c.layout_modifiers[m.name] = m
+        c.register_hooks()
         c.current_sublayout = 0
         return c
 
@@ -140,6 +241,29 @@ class ClientStack(Layout):
                 self.clients[current_focus_index] is not self.focused:
                     current_focus_index = (current_focus_index + offset) % len(self.clients)
         self.group.focus(self.clients[current_focus_index], self.mouse_warp)
+
+############
+# Commands #
+############
+
+    def _items(self, name):
+        if name == "modifiers":
+            return True, self.layout_modifiers.keys()
+        elif name == "sublayouts":
+            return True, range(len(self.sublayouts)) + ['current']
+        else:
+            return Layout._items(self, name)
+
+    def _select(self, name, sel):
+        if name == "modifiers":
+            return self.layout_modifiers[sel]
+        elif name == "sublayouts":
+            if sel == 'current':
+                return self.sublayouts[self.current_sublayout]
+            else:
+                return self.sublayouts[sel]
+        else:
+            return Layout._select(self, name, sel)
 
     def cmd_up(self):
         """

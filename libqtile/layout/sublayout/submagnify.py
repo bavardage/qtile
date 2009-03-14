@@ -1,9 +1,9 @@
 from sublayout import VerticalStack, SubLayout, Rect
 
 class SubMagnify(SubLayout):
-    def __init__(self, clientStack, theme, parent=None, ratio=0.7):
+    def __init__(self, clientStack, parent=None, ratio=0.7):
         self.ratio = ratio
-        SubLayout.__init__(self, clientStack, theme, parent)
+        SubLayout.__init__(self, clientStack, parent)
 
     def _init_sublayouts(self):
         class Magnified(VerticalStack):
@@ -25,15 +25,16 @@ class SubMagnify(SubLayout):
             def request_rectangle(self, r, windows):
                 return (r, Rect())
         self.sublayouts.append(Magnified(self.clientStack,
-                                         self.theme,
                                          parent=self,
                                          )
                                )
         self.sublayouts.append(VertStack(self.clientStack,
-                                         self.theme,
                                          parent=self,
                                          )
                                )
+        self.sublayout_names = {'magnified': self.sublayouts[0],
+                                'stack': self.sublayouts[1],
+                                }
     
     def filter(self, client):
         return True

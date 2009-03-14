@@ -26,17 +26,33 @@ import Xlib.error
 import command, utils
 import manager
 
+STACKING_NORMAL = 50
+STACKING_BELOW = 10
+STACKING_FLOATING = 70
+STACKING_MAXIMISED = 90
+
 class _Window(command.CommandObject):
+    possible_states = ["normal", "minimised", "floating", "maximised", "fullscreen"]
     def __init__(self, window, qtile):
         self.window, self.qtile = window, qtile
         self.hidden = True
         window.change_attributes(event_mask=self._windowMask)
         self.x, self.y, self.width, self.height = None, None, None, None
+        self.next_placement = {
+            'x': -1, 'y': -1, 
+            'w': -1, 'h': -1,
+            'bw': -1, 'bc': -1, #border width, colour
+            'hi': False, #hidden
+            }
         self.borderwidth = 0
         self.name = "<no name>"
-        self.floating = False
-        self.minimised = False
-        self.floatDimensions = {'x': 0, 'y': 0, 'w': 0, 'h': 0}
+        self.states = ["normal"]
+        self.window_type = "normal"
+        g = self.window.get_geometry()
+        self.floatDimensions = {
+            'x': g.x, 'y': g.y, 
+            'w': g.width, 'h': g.height
+            }
         self.hints = {
             'input': True,
             'state': Xutil.NormalState, #Normal state
@@ -49,8 +65,53 @@ class _Window(command.CommandObject):
             'urgent': False,
             }
         self.updateName()
-        self.updateFloating()
         self.updateHints()
+        self.updateWindowType()
+
+    def setState(self, state, val):
+        if state not in self.possible_states:
+            print "No such state: %s" % state
+            return
+        oldstate = self.states[0]
+        if val:
+            if self.states[0] != state:
+                self.states.insert(0, state)
+        else:
+            if self.states[0] == state:
+                self.states = self.states[1:]
+            if not self.states:
+                self.states = ["normal"]
+        if oldstate != self.states[0]:
+            manager.Hooks.call_hook("client-state-changed", state, self)
+    def getState(self, state):
+        if self.states[0] == state:
+            return True
+        else:
+            return False
+
+    def getMinimised(self):
+        return self.getState("minimised")
+    def setMinimised(self, val):
+        self.setState("minimised", val)
+    minimised = property(getMinimised, setMinimised)
+
+    def getFloating(self):
+        return self.getState("floating")
+    def setFloating(self, val):
+        self.setState("floating", val)
+    floating = property(getFloating, setFloating)
+
+    def getMaximised(self):
+        return self.getState("maximised")
+    def setMaximised(self, val):
+        self.setState("maximised", val)
+    maximised = property(getMaximised, setMaximised)
+
+    def getFullscreen(self):
+        return self.getState("fullscreen")
+    def setFullscreen(self, val):
+        self.setState("fullscreen", val)
+    fullscreen = property(getFullscreen, setFullscreen)
 
     def updateName(self):
         try:
@@ -61,32 +122,53 @@ class _Window(command.CommandObject):
             # focus will be acquired shortly. We don't raise an event for this.
             pass
 
-    def updateFloating(self):
-        win = self.window
-        d = self.qtile.display
-        dialog_atom = d.intern_atom('_NET_WM_WINDOW_TYPE_DIALOG')
+    def setWindowType(self, window_type):
         try:
-            win_type = win.get_full_property(
+            oldtype = self._type
+        except:
+            oldtype = None
+        self._type = window_type
+        if self._type != oldtype:
+            manager.Hooks.call_hook("client-type-changed", self)
+    def getWindowType(self):
+        return self._type
+    window_type = property(getWindowType, setWindowType)
+
+    def updateWindowType(self):
+        '''http://standards.freedesktop.org/wm-spec/wm-spec-latest.html#id2551529'''
+        types = {
+            '_NET_WM_WINDOW_TYPE_DESKTOP': "desktop",
+            '_NET_WM_WINDOW_TYPE_DOCK': "dock",
+            '_NET_WM_WINDOW_TYPE_TOOLBAR': "toolbar", 
+            '_NET_WM_WINDOW_TYPE_MENU': "menu",
+            '_NET_WM_WINDOW_TYPE_UTILITY': "utility",
+            '_NET_WM_WINDOW_TYPE_SPLASH': "splash",
+            '_NET_WM_WINDOW_TYPE_DIALOG': "dialog",
+            '_NET_WM_WINDOW_TYPE_DROPDOWN_MENU': "dropdown",
+            '_NET_WM_WINDOW_TYPE_POPUP_MENU': "menu",
+            '_NET_WM_WINDOW_TYPE_TOOLTIP': "tooltip",
+            '_NET_WM_WINDOW_TYPE_NOTIFICATION': "notification",
+            '_NET_WM_WINDOW_TYPE_COMBO': "combo",
+            '_NET_WM_WINDOW_TYPE_DND': "dnd",
+            '_NET_WM_WINDOW_TYPE_NORMAL': "normal",
+        }
+        d = self.qtile.display
+        try:
+            win_type = self.window.get_full_property(
                 d.intern_atom('_NET_WM_WINDOW_TYPE'),
                 Xatom.ATOM,
                 )
         except:
-            self.floating = False
-        if win_type and \
-                win_type.value and \
-                win_type.value[0] == dialog_atom:
-            self.floating = True
-        else:
-            self.floating = False
-        g = win.get_geometry()
-        self.floatDimensions = {
-            'x': g.x,
-            'y': g.y,
-            'w': g.width,
-            'h': g.height,
-            }
-        self.x, self.y, self.width, self.height = g.x, g.y, g.width, g.height
-
+            return
+        if win_type is None:
+            self.window_type = "normal"
+            return
+        type_atom = win_type.value[0]
+        try:
+            atom_name = d.get_atom_name(type_atom)
+        except AttributeError:
+            return
+        self.window_type = types[atom_name]
 
     def updateHints(self):
         ''' 
@@ -246,7 +328,7 @@ class _Window(command.CommandObject):
             y=y,
             width=width,
             height=height,
-            border_width=border
+            border_width=border,
         )
         if borderColor is not None:
             self.window.change_attributes(
@@ -258,9 +340,6 @@ class _Window(command.CommandObject):
             self.window.set_input_focus(
                 X.RevertToPointerRoot,
                 X.CurrentTime
-            )
-            self.window.configure(
-                stack_mode = X.Above
             )
             if warp:
                 self.window.warp_pointer(0, 0)
@@ -411,7 +490,8 @@ class Window(_Window):
     group = None
     def handle_EnterNotify(self, e):
         manager.Hooks.call_hook("client-mouse-enter", self)
-        self.group.focus(self, False)
+        if self.group.currentWindow != self:
+            self.group.focus(self, False)
         if self.group.screen and self.qtile.currentScreen != self.group.screen:
             self.qtile.toScreen(self.group.screen.index)
 
