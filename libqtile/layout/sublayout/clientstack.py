@@ -74,7 +74,12 @@ class ClientStack(Layout):
                 layer += 1
             layers.append((layer, c))
         layers.sort()
+        layers.extend([(-1, w.window) for w in self.group.screen.wiboxes \
+                           if w.above]) #just let -1 be the layer
         layers.reverse()
+        layers.extend([(-1, w.window) for w in self.group.screen.wiboxes \
+                           if not w.above])
+        
         last = X.NONE
         for l,client in layers:
             client.window.configure(
