@@ -148,8 +148,9 @@ class Wibox(CommandObject, WiboxConstants):
     def __init__(self, name, widgets, placement, 
                  x=0, y=0, width="expand", 
                  height=WiboxConstants.AUTO_HEIGHT,
-                 placement_align = "center",
-                 rotation = "auto"):
+                 placement_align="center",
+                 rotation="auto",
+                 above=False):
         #TODO: add error checking for parameters
         self.name = name
         self.widgets = widgets
@@ -160,6 +161,7 @@ class Wibox(CommandObject, WiboxConstants):
         self.placement = placement
         self.placement_align = placement_align
         self.rotation = rotation
+        self.above = above
         
         self.x = x
         self.y = y
