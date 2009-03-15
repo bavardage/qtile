@@ -218,9 +218,11 @@ class TopLevelSubLayout(SubLayout):
                                          **args
                                          )
                                )
-        self.sublayout_names = {'minimised': self.sublayouts[0],
+        self.sublayout_names = {'specialtypes': self.sublayouts[0],
+                                'minimised': self.sublayouts[1],
+                                'maximised': self.sublayouts[2],
                                 'floating': self.sublayouts[1],
-                                'main': self.sublayouts[2],
+                                'main': self.sublayouts[4],
                                 }
 
 
@@ -237,8 +239,78 @@ class VerticalStack(SubLayout):
                    r.w,
                    cliheight,
                    )
-      
-               
+
+class ResizableStack(SubLayout):
+    def __init__(self, clientStack, parent=None, autohide=True,
+                 min_ratio=0.05):
+        SubLayout.__init__(self, 
+                           clientStack, 
+                           parent,
+                           autohide,
+                           )
+        self.client_ratios = []
+        self.min_ratio = min_ratio
+    
+    def layout(self, rect, clients):
+        while len(self.client_ratios) > len(clients):
+            removing = self.client_ratios[-1]
+            share = removing/len(self.client_ratios)
+            self.client_ratios = [r+share for r in self.client_ratios[:-1]]
+        while len(self.client_ratios) < len(clients):
+            l = len(self.client_ratios)
+            self.client_ratios = [r*l/(l+1) for r in self.client_ratios]
+            self.client_ratios.append(1.0/(l+1))
+        SubLayout.layout(self, rect, clients)
+
+    def init_ratios(self):
+        has_ratios = [r for r in self.client_ratios if r]
+        without_ratios = [r for r in self.client_ratios if not r]
+        extra = 1 - sum(has_ratios)
+        share = extra / len(without_ratios)
+        self.client_ratios = [r or share for r in self.client_ratios]
+
+    def configure(self, r, client):
+        position = self.windows.index(client)
+        height = int(self.client_ratios[position] * r.h)
+        y = int(sum(self.client_ratios[:position]) * r.h)
+        height = height or 1 #don't let zero height.., just hide?
+        self.place(client,
+                   r.x,
+                   r.y + y,
+                   r.w,
+                   height,
+                   )
+
+    def cmd_inc_ratio(self, amount):
+        focused = self.clientStack.focused
+        if not focused:
+            print "no focus, returning"
+            return
+        try:
+            index = self.windows.index(focused)
+        except ValueError:
+            print "no focused window in the stack"
+            return
+
+        if index == len(self.windows) - 1: #last?
+            to_reduce = index-1
+        else:
+            to_reduce = index+1
+
+        new_ratio = self.client_ratios[to_reduce] - amount
+        if new_ratio < self.min_ratio:
+            difference = self.min_ratio - new_ratio
+            amount -= difference
+        new_ratio = self.client_ratios[index] + amount
+        if new_ratio < self.min_ratio:
+            difference = self.min_ratio - new_ratio
+            amount += difference
+
+        self.client_ratios[index] += amount
+        self.client_ratios[to_reduce] -= amount
+
+        self.clientStack.group.layoutAll()
+        
 class HorizontalStack(SubLayout):
     def configure(self, r, client):
         position = self.windows.index(client)
