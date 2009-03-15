@@ -131,6 +131,7 @@ class ClientStack(Layout):
         @Hooks("client-state-changed")
         @Hooks("client-type-changed")
         @Hooks("client-focus")
+        @Hooks("wibox-above-changed")
         def restack_hook(datadict, qtile, *args):
             self.need_restack = True
 
