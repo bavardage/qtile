@@ -253,7 +253,8 @@ class ResizableStack(SubLayout):
     def layout(self, rect, clients):
         while len(self.client_ratios) > len(clients):
             removing = self.client_ratios[-1]
-            share = removing/(len(self.client_ratios)-1)
+            if len(self.client_ratios) != 1: #avoid div by zero
+                share = removing/(len(self.client_ratios)-1)
             self.client_ratios = [r+share for r in self.client_ratios[:-1]]
         while len(self.client_ratios) < len(clients):
             l = len(self.client_ratios)

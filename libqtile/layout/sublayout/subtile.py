@@ -1,5 +1,5 @@
 from clientstack import ClientStack
-from sublayout import VerticalStack, SubLayout, Rect
+from sublayout import VerticalStack, ResizableStack, SubLayout, Rect
 
 
 class SubTile(SubLayout):
@@ -57,3 +57,63 @@ class SubTile(SubLayout):
     def cmd_inc_nmaster(self, inc=1):
         self.master_windows += inc
         self.clientStack.group.layoutAll()
+
+
+class SubResizableTile(SubTile):
+    def _init_sublayouts(self):
+        class MasterWindows(ResizableStack):
+            def filter(self, client):
+                return self.index_of(client) < self.parent.master_windows
+            def request_rectangle(self, r, windows):
+                #just take the lot, since this is called AFTER slave windows
+                # - let the slaves take what they want, we'll have the rest
+                return (r, Rect())
+
+        class SlaveWindows(ResizableStack):
+            def filter(self, client):
+                return self.index_of(client) >= self.parent.master_windows
+            def request_rectangle(self, r, windows):
+                if self.autohide and len(windows) == 0:
+                    return (Rect(), r)
+                else:
+                    rmaster, rslave = r.split_vertical(ratio=self.parent.ratio)
+                    return (rslave, rmaster)
+            
+        self.sublayouts.append(SlaveWindows(self.clientStack,
+                                            parent=self,
+                                            autohide=self.expand,
+                                            )
+                               )
+        self.sublayouts.append(MasterWindows(self.clientStack,
+                                             parent=self,
+                                             autohide=False
+                                             )
+                               )
+        self.sublayout_names = {'masters': self.sublayouts[0],
+                                'slaves': self.sublayouts[1]}
+
+
+    @property
+    def current_sublayout(self):
+        focused = self.clientStack.focused
+        if focused and focused in self.sublayouts[0].windows:
+            return self.sublayouts[0]
+        elif focused and focused in self.sublayouts[1].windows:
+            return self.sublayouts[1]
+        else:
+            return None
+
+    ############
+    # Commands #
+    ############
+    def _items(self, name):
+        if name == 'sl':
+            return True, self.sublayout_names.keys() + ['active']
+        else:
+            return SubTile._items(self, name)
+
+    def _select(self, name, sel):
+        if name == 'sl' and sel  == 'active':
+            return self.current_sublayout
+        else:
+            return SubTile._select(self, name, sel)
