@@ -37,6 +37,9 @@ class Rect:
                      self.w,
                      self.h - height)
                 )
+    @property
+    def center(self):
+        return (self.x + self.w/2, self.y+self.h/2)
     
 
     def __repr__(self):
