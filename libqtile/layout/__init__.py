@@ -9,3 +9,4 @@ from sublayout.subtile import SubTile, SubResizableTile
 from sublayout.submax import SubMax
 from sublayout.subfloating import SubFloating
 from sublayout.submagnify import SubMagnify
+from sublayout.subcirclefloat import SubCircleFloat
