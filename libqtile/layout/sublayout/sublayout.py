@@ -253,7 +253,7 @@ class ResizableStack(SubLayout):
     def layout(self, rect, clients):
         while len(self.client_ratios) > len(clients):
             removing = self.client_ratios[-1]
-            share = removing/len(self.client_ratios)
+            share = removing/(len(self.client_ratios)-1)
             self.client_ratios = [r+share for r in self.client_ratios[:-1]]
         while len(self.client_ratios) < len(clients):
             l = len(self.client_ratios)
@@ -289,6 +289,10 @@ class ResizableStack(SubLayout):
             index = self.windows.index(focused)
         except ValueError:
             print "no focused window in the stack"
+            return
+
+        if len(self.windows) == 1:
+            self.client_ratio[0] == 1.0
             return
 
         if index == len(self.windows) - 1: #last?
