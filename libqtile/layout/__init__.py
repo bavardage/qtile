@@ -10,3 +10,4 @@ from sublayout.submax import SubMax
 from sublayout.subfloating import SubFloating
 from sublayout.submagnify import SubMagnify
 from sublayout.subcirclefloat import SubCircleFloat
+from sublayout.subemacs import SubEmacs
