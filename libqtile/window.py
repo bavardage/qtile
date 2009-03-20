@@ -496,6 +496,14 @@ class Window(_Window):
             self.qtile.toScreen(self.group.screen.index)
 
     def handle_ConfigureRequest(self, e):
+        if e.value_mask & Xutil.XValue:
+            self.floatDimensions['x'] = e.x
+        if e.value_mask & Xutil.YValue:
+            self.floatDimensions['y'] = e.y
+        if e.value_mask & Xutil.WidthValue:
+            self.floatDimensions['w'] = e.width
+        if e.value_mask & Xutil.HeightValue:
+            self.floatDimensions['h'] = e.height
         if self.group.screen:
             self.group.layout.configure(self)
             self.notify()
@@ -604,4 +612,20 @@ class Window(_Window):
 
     def cmd_unminimise(self):
         self.minimised = False
+        self.group.layoutAll()
+
+    def cmd_maximise(self):
+        self.maximised = True
+        self.group.layoutAll()
+    
+    def cmd_unmaximise(self):
+        self.maximised = False
+        self.group.layoutAll()
+
+    def cmd_fullscreen(self):
+        self.fullscreen = True
+        self.group.layoutAll()
+
+    def cmd_unfullscreen(self):
+        self.fullscreen = True
         self.group.layoutAll()
