@@ -226,6 +226,16 @@ class SubEmacs(Split):
 
         self.clientStack.group.layoutAll()
 
+    def cmd_focus_next(self):
+        active_frame = self.active_frame()
+        if not active_frame:
+            print >> sys.stderr, "no active frame - cannot focus next"
+            return
+        next = active_frame.next()
+        while not next.assigned_windows and next is not active_frame:
+            next = next.next()
+        self.clientStack.group.focus(next.assigned_windows[0], True)
+
     def cmd_inc_ratio(self, inc):
         active_split = self.active_split()
         if not active_split:
