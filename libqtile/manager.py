@@ -74,6 +74,12 @@ class Screen(command.CommandObject):
         for w in self.wiboxes:
             w._configure(qtile, self, theme)
 
+    def remove_wibox(self, wibox):
+        try:
+            self.wiboxes.remove(wibox)
+        except:
+            pass
+
     def increase_margin(self, margin, amount):
         self.margins[margin] += amount
 
