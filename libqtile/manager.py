@@ -999,6 +999,9 @@ class Qtile(command.CommandObject):
         except Exception, v:
             print type(v), v
 
+    def cmd_call_hook(self, hookname, *args):
+        Hooks.call_hook(hookname, *args)
+
     def cmd_status(self):
         """
             Return "OK" if Qtile is running.
