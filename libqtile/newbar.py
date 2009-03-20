@@ -145,12 +145,15 @@ class WidgetLayer(WiboxConstants):
     
     
 class Wibox(CommandObject, WiboxConstants):
+    _above = None
+    _hidden = None
     def __init__(self, name, widgets, placement, 
                  x=0, y=0, width="expand", 
                  height=WiboxConstants.AUTO_HEIGHT,
                  placement_align="center",
                  rotation="auto",
-                 above=False):
+                 above=False,
+                 hidden=False):
         #TODO: add error checking for parameters
         self.name = name
         self.widgets = widgets
@@ -161,7 +164,8 @@ class Wibox(CommandObject, WiboxConstants):
         self.placement = placement
         self.placement_align = placement_align
         self.rotation = rotation
-        self.above = above
+        self._above = above
+        self._hidden = hidden
         
         self.x = x
         self.y = y
@@ -178,6 +182,28 @@ class Wibox(CommandObject, WiboxConstants):
         self.baseimage = None
 
         self.keyboard_grabbers = []
+
+    def getHidden(self):
+        return self._hidden
+    def setHidden(self, hidden):
+        changed = (hidden != self._hidden)
+        self._hidden = hidden
+        if changed:
+            if self.hidden:
+                self.window.hide()
+            else:
+                self.window.unhide()
+            Hooks.call_hook("wibox-hidden-changed", self)
+    hidden = property(getHidden, setHidden)
+
+    def getAbove(self):
+        return self._above
+    def setAbove(self, above):
+        changed = self._above
+        self._above = above
+        if changed:
+            Hooks.call_hook("wibox-above-changed", self)
+    above = property(getAbove, setAbove)
 
     def _configure(self, qtile, screen, theme):
         self.qtile = qtile
@@ -331,8 +357,10 @@ class Wibox(CommandObject, WiboxConstants):
 
         self.gc = self.window.window.create_gc()
         self.window.addMask(X.KeyPressMask) #allow keygrabbing stuff
-        
-        self.window.unhide() #show
+        if self.hidden:
+            self.window.hide()
+        else:
+            self.window.unhide()
 
     def _init_baseimage(self):
         self.baseimage = Image.new("RGBA",
@@ -500,3 +528,21 @@ class Wibox(CommandObject, WiboxConstants):
             widgets = [i.info() for i in self.widgets],
             widgetdata = widgetdata,
             )
+
+    def cmd_hide(self):
+        self.hidden = True
+
+    def cmd_unhide(self):
+        self.hidden = False
+    
+    def cmd_toggle_hidden(self):
+        self.hidden = not self.hidden
+
+    def cmd_set_above(self):
+        self.above = True
+    
+    def cmd_unset_above(self):
+        self.above = False
+
+    def cmd_toggle_above(self):
+        self.above = not self.above
