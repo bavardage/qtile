@@ -205,6 +205,13 @@ class Wibox(CommandObject, WiboxConstants):
             Hooks.call_hook("wibox-above-changed", self)
     above = property(getAbove, setAbove)
 
+    def destroy(self):
+        self.screen.remove_wibox(self)
+        self.window.window.destroy()
+        for wl in self.widgetLayers:
+            for w in wl.widgets:
+                del self.qtile.widgetMap[w.name]
+
     def _configure(self, qtile, screen, theme):
         self.qtile = qtile
         self.screen = screen
@@ -546,3 +553,6 @@ class Wibox(CommandObject, WiboxConstants):
 
     def cmd_toggle_above(self):
         self.above = not self.above
+
+    def cmd_destroy(self):
+        self.destroy()
