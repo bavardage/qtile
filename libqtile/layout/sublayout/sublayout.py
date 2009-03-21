@@ -153,18 +153,20 @@ class SubLayout(command.CommandObject):
         """
         raise NotImplementedError, "this is %s" % self.__class__.__name__
 
-    def place(self, client, x, y, w, h):
+    def place(self, client, x, y, w, h, subtract_border=True):
         bc = (self.focused_border \
                   if self.clientStack.focus_history \
                   and self.clientStack.focus_history[0] is client \
                   else self.normal_border)
               
-
+        if subtract_border:
+            w -= 2*self.border_width
+            h -= 2*self.border_width
         next_placement = {
             'x': x,
             'y': y,
-            'w': w - 2*self.border_width,
-            'h': h - 2*self.border_width,
+            'w': w,
+            'h': h,
             'bw': self.border_width,
             'bc': bc,
             'hi': False,
@@ -339,6 +341,7 @@ class Floating(SubLayout):
 
     def configure(self, r, client):
         d = client.floatDimensions
+        d['subtract_border'] = False
         self.place(client, **d)
 
 
