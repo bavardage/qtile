@@ -373,4 +373,5 @@ class Maximised(SubLayout):
 
 class SpecialWindowTypes(Floating):
     def filter(self, client):
-        return client.window_type != "normal"
+        return client.window_type != "normal" \
+            and client.window_type != "pseudo-normal"
