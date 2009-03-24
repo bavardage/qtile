@@ -236,7 +236,7 @@ class TopLevelSubLayout(SubLayout):
         self.sublayout_names = {'specialtypes': self.sublayouts[0],
                                 'minimised': self.sublayouts[1],
                                 'maximised': self.sublayouts[2],
-                                'floating': self.sublayouts[1],
+                                'floating': self.sublayouts[3],
                                 'main': self.sublayouts[4],
                                 }
 
