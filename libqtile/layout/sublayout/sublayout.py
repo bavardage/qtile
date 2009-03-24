@@ -8,11 +8,20 @@ class Rect:
         self.w = w
         self.h = h
 
+    def __eq__(self, other):
+        return (self.x == other.x and \
+                    self.y == other.y and \
+                    self.w == other.w and \
+                    self.h == other.h
+                )
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
     def split_vertical(self, ratio=0.5, width=None):
+        if width > self.w or ratio > 1.0:
+            raise Exception, "You're trying to take too much of the rectangle"
         if not width:
             width = int(ratio*self.w)
-        if width > self.w:
-            raise Exception, "You're trying to take too much of the rectangle"
         return (Rect(self.x,
                      self.y,
                      width,
@@ -24,10 +33,10 @@ class Rect:
                 )
     
     def split_horizontal(self, ratio=0.5, height=None):
+        if height > self.h or ratio > 1.0:
+            raise Exception, "You're trying to take too much of this rectange"
         if not height:
             height = int(ratio*self.h)
-        if height > self.h:
-            raise Exception, "You're trying to take too much of this rectange"
         return (Rect(self.x,
                      self.y,
                      self.w,
@@ -41,7 +50,6 @@ class Rect:
     def center(self):
         return (self.x + self.w/2, self.y+self.h/2)
     
-
     def __repr__(self):
         return "(%s, %s, %s, %s)" % (self.x, self.y, self.w, self.h)
 
