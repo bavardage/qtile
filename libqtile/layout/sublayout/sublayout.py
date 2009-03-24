@@ -14,6 +14,7 @@ class Rect:
                     self.w == other.w and \
                     self.h == other.h
                 )
+
     def __ne__(self, other):
         return not self.__eq__(other)
     
@@ -34,7 +35,7 @@ class Rect:
     
     def split_horizontal(self, ratio=0.5, height=None):
         if height > self.h or ratio > 1.0:
-            raise Exception, "You're trying to take too much of this rectange"
+            raise Exception, "You're trying to take too much of this rectangle"
         if not height:
             height = int(ratio*self.h)
         return (Rect(self.x,
@@ -200,6 +201,8 @@ class SubLayout(command.CommandObject):
     def cmd_info(self):
         return dict(
             name=self.__class__.__name__,
+            windows=[w.name for w in self.windows],
+            sublayouts=self.sublayout_names.keys(),
             )
 
 class TopLevelSubLayout(SubLayout):
