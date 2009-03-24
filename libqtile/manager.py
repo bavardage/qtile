@@ -55,11 +55,11 @@ class Key:
 
 class Screen(command.CommandObject):
     group = None
-    def __init__(self, wiboxes):
+    def __init__(self, wiboxes=None):
         """
             :wiboxes An array of wiboxes
         """
-        self.wiboxes = wiboxes
+        self.wiboxes = (wiboxes if wiboxes else [])
         self.margins = {'left': 0,
                         'right': 0,
                         'top': 0,
