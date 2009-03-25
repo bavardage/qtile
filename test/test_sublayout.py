@@ -55,6 +55,9 @@ class Config:
         layout.ClientStack(
             SubLayouts=[
                 (VertStack, {}),
+                (layout.SubFloating, {}),
+                (layout.SubMax, {}),
+                (layout.SubMagnify, {}),
                 ],
             add_mode=layout.ClientStack.ADD_TO_BOTTOM,
             ),
@@ -114,10 +117,108 @@ class uTopLevelSublayout(utils.QtileTests):
 
         #TODO: Test special types
 
+class uMinimisedMaximisedFloating(utils.QtileTests):
+    '''
+    tests:
+     - Maximised, Minimised, Floating
+    '''
+    config=Config()
+
+    def test_minimised(self):
+        self.testWindow("one")
+        self.c.window.minimise()
+        assert self.c.window.info()['next_placement']['hi'] == True
+        self.c.window.unminimise()
+        assert self.c.window.info()['next_placement']['hi'] == False
+
+    def test_maximised(self):
+        self.testWindow("one")
+        self.testWindow("two")
+        self.testWindow("three")
+
+        screen = self.c.screen.info()
+
+        self.c.window.maximise()
+        info = self.c.window.info()
+        assert info['width'] + 2*info['next_placement']['bw'] == screen['width']
+        assert info['height'] + 2*info['next_placement']['bw'] == screen['height']
+        assert info['x'] == screen['x']
+        assert info['y'] == screen['y']
+
+    def test_floating(self):
+        self.testWindow("one")
+        self.c.window.toggle_floating()
+        info = self.c.window.info()
+        fd = info['floatDimensions']
+        assert fd['w'] == info['width']
+        assert fd['h'] == info['height']
+        assert fd['x'] == info['x']
+        assert fd['y'] == info['y']
+
+class uNormalSublayouts(utils.QtileTests):
+    config=Config()
+    def test_SubFloating(self):
+        self.c.layout.nextsublayout()
+        assert self.c.layout.sublayouts['current'].sl['main'].info()['name'] == 'SubFloating'
+    
+        self.testWindow("one")
+        info = self.c.window.info()
+        fd = info['floatDimensions']
+        assert fd['w'] == info['width']
+        assert fd['h'] == info['height']
+        assert fd['x'] == info['x']
+        assert fd['y'] == info['y']
+        
+        self.testWindow("two")
+        info = self.c.window.info()
+        fd = info['floatDimensions']
+        assert fd['w'] == info['width']
+        assert fd['h'] == info['height']
+        assert fd['x'] == info['x']
+        assert fd['y'] == info['y']
+
+    def test_SubMax(self):
+        self.c.layout.nextsublayout()
+        self.c.layout.nextsublayout()
+        assert self.c.layout.sublayouts['current'].sl['main'].info()['name'] == 'SubMax'
+        
+        screen = self.c.screen.info()
+
+        self.testWindow("one")
+        info = self.c.window.info()
+        assert info['width'] + 2*info['next_placement']['bw'] == screen['width']
+        assert info['height'] + 2*info['next_placement']['bw'] == screen['height']
+        assert info['x'] == screen['x']
+        assert info['y'] == screen['y']
+
+        self.testWindow("two")
+        info = self.c.window.info()
+        assert info['width'] + 2*info['next_placement']['bw'] == screen['width']
+        assert info['height'] + 2*info['next_placement']['bw'] == screen['height']
+        assert info['x'] == screen['x']
+        assert info['y'] == screen['y']
+
+
+    def test_SubMagnify(self):
+        self.c.layout.nextsublayout()
+        self.c.layout.nextsublayout()
+        self.c.layout.nextsublayout()
+        assert self.c.layout.sublayouts['current'].sl['main'].info()['name'] == 'SubMagnify'
+
+        self.testWindow("one")
+        self.testWindow("two")
+        self.testWindow("three")
+        
+        submagnify = self.c.layout.sublayouts['current'].sl['main']
+        assert submagnify.sl['magnified'].info()['windows'] == ["three"]
+        assert submagnify.sl['stack'].info()['windows'] == ["one", "two"]
+
 
 tests = [
     uRect(),
     utils.xfactory(xinerama=False), [
         uTopLevelSublayout(),
+        uMinimisedMaximisedFloating(),
+        uNormalSublayouts(),
         ],
     ]
